@@ -1,37 +1,39 @@
 package com.recordermetronome
 
+import android.Manifest
+import android.content.Context
+import androidx.annotation.RequiresPermission
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 
 class RecorderViewModel : ViewModel() {
-    private val recorderEngine = RecorderEngine()
+    private val engine = RecorderEngine()
+    val state = engine.state
 
-    var isRecording by mutableStateOf(false)
+    // State to control the "Save or Discard" dialog
+    var pendingAudioData by mutableStateOf<ByteArray?>(null)
         private set
 
-    fun onStartRecording() {
-        // Logic to start recording
-        // In a real app, you'd handle permissions before calling this,
-        // or have this call a service.
-        try {
-            recorderEngine.start()
-            isRecording = true
-        } catch (e: SecurityException) {
-            // Handle permission not granted
+    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
+    fun onRecordTapped() = engine.startOrResumeRecording()
+    fun onPauseRecordTapped() = engine.pauseRecording()
+
+    fun onPlaybackTapped() = engine.playBackCurrentStream()
+    fun onPausePlaybackTapped() = engine.pausePlayback()
+
+    fun onStopTapped() {
+        engine.stopAndFinalize { data ->
+            pendingAudioData = data // This triggers the UI dialog
         }
     }
 
-    fun onStopRecording() {
-        recorderEngine.stop()
-        isRecording = false
+    fun onDiscardData() {
+        TODO("Not yet implemented")
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        if (isRecording) {
-            recorderEngine.stop()
-        }
+    fun onSaveData(context: Context, string: String) {
+        TODO("Not yet implemented")
     }
 }
