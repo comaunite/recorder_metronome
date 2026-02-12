@@ -55,6 +55,8 @@ class RecorderEngine {
                 val read = recorder?.read(buffer, 0, buffer.size) ?: 0
                 if (read > 0) {
                     recordedData.write(buffer, 0, read)
+                } else if (read < 0) {
+                    println("RECORDING ERROR: $read")
                 }
             }
             cleanupRecorder()
@@ -78,41 +80,56 @@ class RecorderEngine {
         if (_state.value != RecordingState.PAUSED) return
 
         val audioBytes = recordedData.toByteArray()
-        if (audioBytes.isEmpty()) return
+
+        if (audioBytes.isEmpty()) {
+            println("PLAYBACK: No data to play")
+            return
+        }
 
         _state.value = RecordingState.PLAYBACK
 
         Thread {
-            val attributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build()
+            try {
+                println("PLAYBACK: Starting playback of ${audioBytes.size} bytes")
 
-            val format = AudioFormat.Builder()
-                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                .setSampleRate(sampleRate)
-                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                .build()
+                val attributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
 
-            val audioTrack = AudioTrack.Builder()
-                .setAudioAttributes(attributes)
-                .setAudioFormat(format)
-                .setBufferSizeInBytes(audioBytes.size)
-                .setTransferMode(AudioTrack.MODE_STATIC)
-                .build()
+                val format = AudioFormat.Builder()
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                    .setSampleRate(sampleRate)
+                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                    .build()
 
-            audioTrack.write(audioBytes, 0, audioBytes.size)
-            audioTrack.play()
+                val audioTrack = AudioTrack.Builder()
+                    .setAudioAttributes(attributes)
+                    .setAudioFormat(format)
+                    .setBufferSizeInBytes(audioBytes.size)
+                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .build()
 
-            // Calculate duration to sleep the thread
-            val durationMs = (audioBytes.size.toFloat() / (sampleRate * 2)) * 1000
-            Thread.sleep(durationMs.toLong())
+                audioTrack.write(audioBytes, 0, audioBytes.size)
 
-            audioTrack.stop()
-            audioTrack.release()
+                TODO("Remove this")
+                audioTrack.setVolume(AudioTrack.getMaxVolume())
 
-            // Automatically return to PAUSED state so they can resume or play again
-            _state.value = RecordingState.PAUSED
+                audioTrack.play()
+
+                val durationMs = (audioBytes.size.toFloat() / (sampleRate * 2)) * 1000
+
+                println("PLAYBACK: Sleeping for ${durationMs.toLong() + 500}ms")
+                Thread.sleep(durationMs.toLong() + 500)
+
+                audioTrack.stop()
+                audioTrack.release()
+                println("PLAYBACK: Finished")
+            } catch (e: Exception) {
+                println("PLAYBACK ERROR: ${e.message}")
+            } finally {
+                _state.value = RecordingState.PAUSED
+            }
         }.start()
     }
 
