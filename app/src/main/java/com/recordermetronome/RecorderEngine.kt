@@ -29,6 +29,9 @@ class RecorderEngine {
     private val _state = MutableStateFlow(RecordingState.IDLE)
     val state: StateFlow<RecordingState> = _state.asStateFlow()
 
+    private val _waveformData = MutableStateFlow(WaveformData())
+    val waveformData: StateFlow<WaveformData> = _waveformData.asStateFlow()
+
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun startOrResumeRecording() {
         if (_state.value == RecordingState.RECORDING) return
@@ -55,6 +58,10 @@ class RecorderEngine {
                 val read = recorder?.read(buffer, 0, buffer.size) ?: 0
                 if (read > 0) {
                     recordedData.write(buffer, 0, read)
+                    // Update waveform with the latest buffer
+                    val amplitudes = extractAmplitudes(buffer.copyOf(read), sampleCount = 64)
+                    val maxAmp = amplitudes.maxOrNull() ?: 1f
+                    _waveformData.value = WaveformData(amplitudes, maxAmp)
                 } else if (read < 0) {
                     println("RECORDING ERROR: $read")
                 }
@@ -76,7 +83,8 @@ class RecorderEngine {
     }
 
     fun playBackCurrentStream() {
-        // Only allow playback if we are paused
+        if (_state.value == RecordingState.RECORDING) pauseRecording()
+
         if (_state.value != RecordingState.PAUSED) return
 
         val audioBytes = recordedData.toByteArray()
@@ -85,6 +93,11 @@ class RecorderEngine {
             println("PLAYBACK: No data to play")
             return
         }
+
+        // Update waveform for playback
+        val amplitudes = extractAmplitudes(audioBytes, sampleCount = 64)
+        val maxAmp = amplitudes.maxOrNull() ?: 1f
+        _waveformData.value = WaveformData(amplitudes, maxAmp)
 
         _state.value = RecordingState.PLAYBACK
 
@@ -107,15 +120,21 @@ class RecorderEngine {
                     .setAudioAttributes(attributes)
                     .setAudioFormat(format)
                     .setBufferSizeInBytes(audioBytes.size)
-                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .setTransferMode(AudioTrack.MODE_STREAM)
                     .build()
 
-                audioTrack.write(audioBytes, 0, audioBytes.size)
+                println("PLAYBACK: AudioTrack state=${audioTrack.state}, playState=${audioTrack.playState}")
+                println("PLAYBACK: Buffer size=${audioBytes.size}, Sample rate=$sampleRate")
+                println("PLAYBACK: Writing bytes...")
 
-                // Remove this later
+                val written = audioTrack.write(audioBytes, 0, audioBytes.size)
+                println("PLAYBACK: Written $written bytes (expected ${audioBytes.size})")
+
                 audioTrack.setVolume(AudioTrack.getMaxVolume())
+                println("PLAYBACK: Volume set to ${AudioTrack.getMaxVolume()}")
 
                 audioTrack.play()
+                println("PLAYBACK: Play called, playState=${audioTrack.playState}")
 
                 val durationMs = (audioBytes.size.toFloat() / (sampleRate * 2)) * 1000
 
@@ -133,8 +152,30 @@ class RecorderEngine {
         }.start()
     }
 
+    fun extractAmplitudes(audioBytes: ByteArray, sampleCount: Int = 128): List<Float> {
+        val amplitudes = mutableListOf<Float>()
+        val bytesPerSample = 2 // 16-bit audio
+        val samplesPerBucket = (audioBytes.size / bytesPerSample) / sampleCount.coerceAtLeast(1)
+
+        for (i in 0 until sampleCount) {
+            val startByte = i * samplesPerBucket * bytesPerSample
+            val endByte = ((i + 1) * samplesPerBucket * bytesPerSample).coerceAtMost(audioBytes.size)
+
+            var sum = 0f
+            for (j in startByte until endByte step bytesPerSample) {
+                if (j + 1 < audioBytes.size) {
+                    val sample = ((audioBytes[j + 1].toInt() shl 8) or (audioBytes[j].toInt() and 0xFF))
+                    sum += kotlin.math.abs(sample)
+                }
+            }
+
+            amplitudes.add(sum / ((endByte - startByte) / bytesPerSample).coerceAtLeast(1))
+        }
+
+        return amplitudes
+    }
+
     fun stopAndFinalize(onSave: (ByteArray) -> Unit) {
-        val wasRecording = _state.value == RecordingState.RECORDING
         _state.value = RecordingState.IDLE
 
         // Give the thread a moment to exit and cleanup
@@ -142,6 +183,7 @@ class RecorderEngine {
 
         val data = recordedData.toByteArray()
         recordedData.reset()
+        _waveformData.value = WaveformData() // Clear waveform
 
         if (data.isNotEmpty()) {
             onSave(data)

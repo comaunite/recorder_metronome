@@ -1,4 +1,4 @@
-package com.recordermetronome
+package com.recordermetronome.composable
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
@@ -22,9 +23,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.recordermetronome.RecorderViewModel
+import com.recordermetronome.RecordingState
 
 @Composable
 fun RecorderScreen(
@@ -34,6 +38,7 @@ fun RecorderScreen(
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val pendingData = viewModel.pendingAudioData
+    val waveformData by viewModel.waveformData.collectAsStateWithLifecycle()
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
@@ -61,6 +66,16 @@ fun RecorderScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Waveform Visualizer
+        WaveformVisualizer(
+            waveformData = waveformData,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
         // Status Text
         Text(
             text = when (state) {
@@ -86,6 +101,10 @@ fun RecorderScreen(
                 }
 
                 RecordingState.RECORDING -> {
+                    Button(onClick = { viewModel.onPlaybackTapped() }) {
+                        Text("Play")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = { viewModel.onPauseRecordTapped() }) {
                         Text("Pause Recording")
                     }
@@ -99,12 +118,12 @@ fun RecorderScreen(
                 }
 
                 RecordingState.PAUSED -> {
-                    Button(onClick = { viewModel.onRecordTapped() }) {
-                        Text("Resume Recording")
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = { viewModel.onPlaybackTapped() }) {
                         Text("Play")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = { viewModel.onRecordTapped() }) {
+                        Text("Resume Recording")
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -116,12 +135,12 @@ fun RecorderScreen(
                 }
 
                 RecordingState.PLAYBACK -> {
-                    Button(onClick = { viewModel.onRecordTapped() }) {
-                        Text("Resume Recording")
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = { viewModel.onPausePlaybackTapped() }) {
                         Text("Pause Playback")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = { viewModel.onRecordTapped() }) {
+                        Text("Resume Recording")
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
