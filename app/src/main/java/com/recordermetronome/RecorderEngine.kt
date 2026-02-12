@@ -112,7 +112,7 @@ class RecorderEngine {
 
                 audioTrack.write(audioBytes, 0, audioBytes.size)
 
-                TODO("Remove this")
+                // Remove this later
                 audioTrack.setVolume(AudioTrack.getMaxVolume())
 
                 audioTrack.play()
