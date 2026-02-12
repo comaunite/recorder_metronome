@@ -7,7 +7,6 @@ import android.media.MediaRecorder
 import androidx.annotation.RequiresPermission
 
 class RecorderEngine {
-
     private val sampleRate = 44100
     private val bufferSize =
         AudioRecord.getMinBufferSize(
@@ -18,7 +17,9 @@ class RecorderEngine {
 
     private var recorder: AudioRecord? = null
     private var recordingThread: Thread? = null
+
     @Volatile private var isRecording = false
+    fun isRecording() = isRecording
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun start() {

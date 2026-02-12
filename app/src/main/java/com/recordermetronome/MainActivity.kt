@@ -1,68 +1,57 @@
-package com.recordermetronome
-
-import RecorderScreen
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import com.recordermetronome.RecorderViewModel
 import com.recordermetronome.ui.theme.RecorderMetronomeTheme
+import kotlin.getValue
 
 class MainActivity : ComponentActivity() {
 
-    private var isRecording by mutableStateOf(false)
-
+    // Logic for permissions must stay here or in a dedicated bridge
+    // because it requires an Activity context to launch.
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
-                startRecording()
+                // If granted, we can trigger the start via the ViewModel
+                viewModel.onStartRecording()
             }
         }
 
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    private val viewModel by viewModels<RecorderViewModel>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         enableEdgeToEdge()
-
         setContent {
             RecorderMetronomeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     RecorderScreen(
-                        modifier = Modifier.padding(innerPadding),
-                        onStart = { startRecording() },
-                        onStop = { stopRecording() }
+                        isRecording = viewModel.isRecording,
+                        onStartRequest = { handleStartRecording() },
+                        onStopRequest = { viewModel.onStopRecording() },
+                        modifier = Modifier.padding(innerPadding)
                     )
                 }
             }
         }
     }
 
-    private fun startRecording() {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED) {
-
+    private fun handleStartRecording() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            == PackageManager.PERMISSION_GRANTED) {
+            viewModel.onStartRecording()
+        } else {
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
-
-        println("Recording started")
-    }
-
-    private fun stopRecording() {
-        println("Recording stopped")
     }
 }

@@ -1,4 +1,8 @@
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -8,23 +12,24 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun RecorderScreen(
-    modifier: Modifier = Modifier,
-    onStart: () -> Unit,
-    onStop: () -> Unit
+    isRecording: Boolean,
+    onStartRequest: () -> Unit,
+    onStopRequest: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Button(onClick = onStart) {
-            Text("Start Recording")
+        if (isRecording) {
+            Text(text = "Recording in progress...")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = onStop) {
-            Text("Stop Recording")
+        Button(onClick = if (isRecording) onStopRequest else onStartRequest) {
+            Text(if (isRecording) "Stop Recording" else "Start Recording")
         }
     }
 }
