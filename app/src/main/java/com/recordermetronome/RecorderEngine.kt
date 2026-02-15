@@ -24,7 +24,10 @@ class RecorderEngine {
 
     private var recorder: AudioRecord? = null
     private var recordingThread: Thread? = null
+    private var playbackThread: Thread? = null
+    private var audioTrack: AudioTrack? = null
     private val recordedData = ByteArrayOutputStream()
+    private var pausedPlaybackPosition = 0L // Remember position when paused
 
     private val _state = MutableStateFlow(RecordingState.IDLE)
     val state: StateFlow<RecordingState> = _state.asStateFlow()
@@ -101,6 +104,11 @@ class RecorderEngine {
     fun pausePlayback() {
         if (_state.value == RecordingState.PLAYBACK) {
             _state.value = RecordingState.PAUSED
+            // Stop the audio track
+            audioTrack?.pause()
+            audioTrack?.flush()
+            // Timestamp is already preserved via pausedPlaybackPosition
+            println("PLAYBACK: Paused at ${pausedPlaybackPosition}ms")
         }
     }
 
@@ -124,9 +132,9 @@ class RecorderEngine {
 
         _state.value = RecordingState.PLAYBACK
 
-        Thread {
+        playbackThread = Thread {
             try {
-                println("PLAYBACK: Starting playback of ${audioBytes.size} bytes")
+                println("PLAYBACK: Starting playback of ${audioBytes.size} bytes from position ${pausedPlaybackPosition}ms")
 
                 val attributes = AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -139,45 +147,73 @@ class RecorderEngine {
                     .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                     .build()
 
-                val audioTrack = AudioTrack.Builder()
+                audioTrack = AudioTrack.Builder()
                     .setAudioAttributes(attributes)
                     .setAudioFormat(format)
                     .setBufferSizeInBytes(audioBytes.size)
                     .setTransferMode(AudioTrack.MODE_STREAM)
                     .build()
 
-                println("PLAYBACK: AudioTrack state=${audioTrack.state}, playState=${audioTrack.playState}")
+                println("PLAYBACK: AudioTrack state=${audioTrack?.state}, playState=${audioTrack?.playState}")
                 println("PLAYBACK: Buffer size=${audioBytes.size}, Sample rate=$sampleRate")
-                println("PLAYBACK: Writing bytes...")
 
-                val written = audioTrack.write(audioBytes, 0, audioBytes.size)
-                println("PLAYBACK: Written $written bytes (expected ${audioBytes.size})")
+                // Calculate start position in bytes
+                val startPositionBytes = ((pausedPlaybackPosition / 1000f) * sampleRate * 2).toInt()
+                    .coerceIn(0, audioBytes.size)
 
-                audioTrack.setVolume(AudioTrack.getMaxVolume())
-                println("PLAYBACK: Volume set to ${AudioTrack.getMaxVolume()}")
+                // Write audio data
+                val bytesToWrite = audioBytes.size - startPositionBytes
+                if (bytesToWrite > 0) {
+                    println("PLAYBACK: Writing $bytesToWrite bytes from position $startPositionBytes...")
+                    val written = audioTrack?.write(audioBytes, startPositionBytes, bytesToWrite) ?: 0
+                    println("PLAYBACK: Written $written bytes")
 
-                audioTrack.play()
-                println("PLAYBACK: Play called, playState=${audioTrack.playState}")
+                    audioTrack?.setVolume(AudioTrack.getMaxVolume())
+                    audioTrack?.play()
+                    println("PLAYBACK: Play called, playState=${audioTrack?.playState}")
 
-                val durationMs = (audioBytes.size.toFloat() / (sampleRate * 2)) * 1000
-                val startTime = System.currentTimeMillis()
-                var elapsed: Long
-                do {
-                    elapsed = System.currentTimeMillis() - startTime
-                    timestampListener?.invoke(elapsed)
-                    Thread.sleep(16) // ~60Hz update
-                } while (elapsed < durationMs)
+                    val durationMs = (bytesToWrite.toFloat() / (sampleRate * 2)) * 1000
+                    val startTime = System.currentTimeMillis()
 
-                audioTrack.stop()
-                audioTrack.release()
-                println("PLAYBACK: Finished")
+                    // Non-blocking update loop
+                    while (_state.value == RecordingState.PLAYBACK) {
+                        val elapsed = System.currentTimeMillis() - startTime
+                        pausedPlaybackPosition = (startPositionBytes / (sampleRate * 2f) * 1000).toLong() + elapsed
+                        timestampListener?.invoke(pausedPlaybackPosition)
+
+                        if (elapsed >= durationMs) {
+                            println("PLAYBACK: Reached end of audio")
+                            break
+                        }
+
+                        Thread.sleep(16) // ~60Hz update
+                    }
+
+                    audioTrack?.stop()
+                    println("PLAYBACK: Stopped")
+                } else {
+                    println("PLAYBACK: No bytes to write from position $startPositionBytes")
+                }
+
+                audioTrack?.release()
+                audioTrack = null
+
+                // If we finished naturally (not paused), reset position
+                if (_state.value == RecordingState.PLAYBACK) {
+                    _state.value = RecordingState.PAUSED
+                    pausedPlaybackPosition = 0L
+                    timestampListener?.invoke(0L)
+                    println("PLAYBACK: Finished, reset position")
+                } else {
+                    println("PLAYBACK: Interrupted at ${pausedPlaybackPosition}ms")
+                }
             } catch (e: Exception) {
                 println("PLAYBACK ERROR: ${e.message}")
-            } finally {
+                e.printStackTrace()
                 _state.value = RecordingState.PAUSED
-                timestampListener?.invoke(0L)
             }
-        }.start()
+        }
+        playbackThread?.start()
     }
 
     fun extractAmplitudes(audioBytes: ByteArray, sampleCount: Int = 128): List<Float> {
@@ -206,12 +242,20 @@ class RecorderEngine {
     fun stopAndFinalize(onSave: (ByteArray) -> Unit) {
         _state.value = RecordingState.IDLE
 
-        // Give the thread a moment to exit and cleanup
+        // Cleanup playback if running
+        audioTrack?.stop()
+        audioTrack?.release()
+        audioTrack = null
+        playbackThread?.join(500)
+        pausedPlaybackPosition = 0L
+
+        // Cleanup recording if running
         recordingThread?.join(500)
 
         val data = recordedData.toByteArray()
         recordedData.reset()
         _waveformData.value = WaveformData() // Clear waveform
+        timestampListener?.invoke(0L)
 
         if (data.isNotEmpty()) {
             onSave(data)
