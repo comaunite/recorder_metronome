@@ -28,15 +28,36 @@ fun WaveformVisualizer(
         drawRect(color = backgroundColor)
 
         val amplitudes = waveformData.amplitudes
-        println("VISUALIZER: Rendering ${amplitudes.size} amplitudes")
-        if (amplitudes.isEmpty()) return@Canvas
+        val currentPosition = waveformData.currentPosition
 
         val width = size.width
         val height = size.height
         val centerY = height / 2f
+        val centerX = width / 2f // Fixed red line position
+
+        if (amplitudes.isEmpty()) {
+            // Draw center line when empty
+            drawLine(
+                color = waveColor.copy(alpha = 0.2f),
+                start = Offset(0f, centerY),
+                end = Offset(width, centerY),
+                strokeWidth = 1f
+            )
+
+            // Draw red playback line
+            drawLine(
+                color = Color.Red,
+                start = Offset(centerX, 0f),
+                end = Offset(centerX, height),
+                strokeWidth = 3f
+            )
+            return@Canvas
+        }
+
         val maxAmplitude = waveformData.maxAmplitude.coerceAtLeast(1f)
-        val barWidth = (width / amplitudes.size.coerceAtLeast(1)) * 0.6f // Make bars thinner (60% of available space)
-        val barSpacing = (width / amplitudes.size.coerceAtLeast(1)) * 0.4f // 40% spacing
+        val barWidth = 3.dp.toPx() // Fixed thin bar width
+        val barSpacing = 2.dp.toPx() // Fixed spacing
+        val barFullWidth = barWidth + barSpacing
 
         // Draw center line
         drawLine(
@@ -46,11 +67,24 @@ fun WaveformVisualizer(
             strokeWidth = 1f
         )
 
+        // Calculate which bars to draw based on current position
+        // The current position should be at centerX
+        val barsToLeft = (centerX / barFullWidth).toInt()
+        val barsToRight = ((width - centerX) / barFullWidth).toInt()
+
+        val startIndex = (currentPosition - barsToLeft).coerceAtLeast(0)
+        val endIndex = (currentPosition + barsToRight).coerceAtMost(amplitudes.size - 1)
+
         // Draw amplitude bars
-        amplitudes.forEachIndexed { index, amplitude ->
+        for (i in startIndex..endIndex) {
+            val amplitude = amplitudes[i]
             val normalized = (abs(amplitude) / maxAmplitude).coerceIn(0f, 1f)
             val barHeight = (height / 2) * normalized
-            val xPosition = index * (barWidth + barSpacing)
+
+            // Calculate x position relative to current position
+            val offsetFromCurrent = i - currentPosition
+            val xPosition = centerX + (offsetFromCurrent * barFullWidth)
+
             drawRect(
                 color = waveColor,
                 topLeft = Offset(
@@ -63,5 +97,13 @@ fun WaveformVisualizer(
                 )
             )
         }
+
+        // Draw red playback line on top
+        drawLine(
+            color = Color.Red,
+            start = Offset(centerX, 0f),
+            end = Offset(centerX, height),
+            strokeWidth = 3f
+        )
     }
 }

@@ -81,10 +81,13 @@ class RecorderEngine {
                     // Update waveform only ~3 times per second
                     val now = System.currentTimeMillis()
                     if (now - lastWaveformUpdate >= waveformUpdateInterval) {
-                        val amplitudes = extractAmplitudes(buffer.copyOf(read), sampleCount = 200)
+                        // Extract amplitudes from the entire recorded data so far
+                        val allData = recordedData.toByteArray()
+                        val amplitudes = extractAmplitudes(allData, sampleCount = 200)
                         val maxAmp = amplitudes.maxOrNull() ?: 1f
-                        _waveformData.value = WaveformData(amplitudes, maxAmp)
-                        println("WAVEFORM: Updated with ${amplitudes.size} amplitudes, max=$maxAmp")
+                        // Set position at the end (latest data)
+                        _waveformData.value = WaveformData(amplitudes, maxAmp, currentPosition = amplitudes.size - 1)
+                        println("WAVEFORM: Updated with ${amplitudes.size} amplitudes, max=$maxAmp, pos=${amplitudes.size - 1}")
                         lastWaveformUpdate = now
                     }
                 } else if (read < 0) {
@@ -98,6 +101,16 @@ class RecorderEngine {
     fun pauseRecording() {
         if (_state.value == RecordingState.RECORDING) {
             _state.value = RecordingState.PAUSED
+
+            // Update waveform one last time with the entire recording
+            val allData = recordedData.toByteArray()
+            if (allData.isNotEmpty()) {
+                val amplitudes = extractAmplitudes(allData, sampleCount = 200)
+                val maxAmp = amplitudes.maxOrNull() ?: 1f
+                // Keep position at the end when paused
+                _waveformData.value = WaveformData(amplitudes, maxAmp, currentPosition = amplitudes.size - 1)
+                println("WAVEFORM PAUSED: ${amplitudes.size} amplitudes, pos=${amplitudes.size - 1}")
+            }
         }
     }
 
@@ -127,8 +140,14 @@ class RecorderEngine {
         // Update waveform for playback - show entire recording with more bars
         val amplitudes = extractAmplitudes(audioBytes, sampleCount = 200)
         val maxAmp = amplitudes.maxOrNull() ?: 1f
-        _waveformData.value = WaveformData(amplitudes, maxAmp)
-        println("WAVEFORM PLAYBACK: Updated with ${amplitudes.size} amplitudes, max=$maxAmp")
+
+        // Calculate starting position based on pausedPlaybackPosition
+        val totalDurationMs = (audioBytes.size / (sampleRate * 2f) * 1000).toLong()
+        val startPositionIndex = ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
+            .coerceIn(0, amplitudes.size - 1)
+
+        _waveformData.value = WaveformData(amplitudes, maxAmp, currentPosition = startPositionIndex)
+        println("WAVEFORM PLAYBACK: Updated with ${amplitudes.size} amplitudes, max=$maxAmp, startPos=$startPositionIndex")
 
         _state.value = RecordingState.PLAYBACK
 
@@ -180,6 +199,11 @@ class RecorderEngine {
                         val elapsed = System.currentTimeMillis() - startTime
                         pausedPlaybackPosition = (startPositionBytes / (sampleRate * 2f) * 1000).toLong() + elapsed
                         timestampListener?.invoke(pausedPlaybackPosition)
+
+                        // Update waveform position based on current playback position
+                        val currentPosIndex = ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
+                            .coerceIn(0, amplitudes.size - 1)
+                        _waveformData.value = WaveformData(amplitudes, maxAmp, currentPosition = currentPosIndex)
 
                         if (elapsed >= durationMs) {
                             println("PLAYBACK: Reached end of audio")
