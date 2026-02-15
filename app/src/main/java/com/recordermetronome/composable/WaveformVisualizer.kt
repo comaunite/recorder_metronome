@@ -33,7 +33,7 @@ fun WaveformVisualizer(
         val width = size.width
         val height = size.height
         val centerY = height / 2f
-        val centerX = width / 2f // Fixed red line position
+        val centerX = width / 2f + 2 // Fixed red line position
 
         if (amplitudes.isEmpty()) {
             // Draw center line when empty
@@ -55,8 +55,8 @@ fun WaveformVisualizer(
         }
 
         val maxAmplitude = waveformData.maxAmplitude.coerceAtLeast(1f)
-        val barWidth = 3.dp.toPx() // Fixed thin bar width
-        val barSpacing = 2.dp.toPx() // Fixed spacing
+        val barWidth = 1.dp.toPx() // Fixed thin bar width
+        val barSpacing = 1.dp.toPx() // Fixed spacing
         val barFullWidth = barWidth + barSpacing
 
         // Draw center line
