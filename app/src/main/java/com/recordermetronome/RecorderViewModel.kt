@@ -1,6 +1,7 @@
 package com.recordermetronome
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.annotation.RequiresPermission
 import androidx.compose.runtime.getValue
@@ -18,12 +19,27 @@ class RecorderViewModel : ViewModel() {
     var pendingAudioData by mutableStateOf<ByteArray?>(null)
         private set
 
-    private val _waveformData = MutableStateFlow(WaveformData())
-    val waveformData = _waveformData.asStateFlow()
+    val waveformData = engine.waveformData
 
-    fun updateWaveform(amplitudes: List<Float>, maxAmplitude: Float) {
-        _waveformData.value = WaveformData(amplitudes, maxAmplitude)
+    private val _timestamp = MutableStateFlow(0L)
+    val timestamp = _timestamp.asStateFlow()
+
+    val formattedTimestamp: String
+        get() = formatMillisToTimestamp(_timestamp.value)
+
+    fun updateTimestamp(millis: Long) {
+        _timestamp.value = millis
     }
+
+    @SuppressLint("DefaultLocale")
+    fun formatMillisToTimestamp(millis: Long): String {
+        val hours = millis / 3600000
+        val minutes = (millis % 3600000) / 60000
+        val seconds = (millis % 60000) / 1000
+        val ms = millis % 1000
+        return String.format("%02d:%02d:%02d.%01d", hours, minutes, seconds, ms / 100)
+    }
+
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun onRecordTapped() = engine.startOrResumeRecording()
@@ -34,7 +50,7 @@ class RecorderViewModel : ViewModel() {
 
     fun onStopTapped() {
         engine.stopAndFinalize { data ->
-            pendingAudioData = data // This triggers the UI dialog
+            pendingAudioData = data
         }
     }
 
@@ -44,5 +60,11 @@ class RecorderViewModel : ViewModel() {
 
     fun onSaveData(context: Context, string: String) {
         TODO("Not yet implemented")
+    }
+
+    init {
+        engine.setTimestampListener { millis ->
+            updateTimestamp(millis)
+        }
     }
 }

@@ -19,11 +19,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,6 +39,8 @@ fun RecorderScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val pendingData = viewModel.pendingAudioData
     val waveformData by viewModel.waveformData.collectAsStateWithLifecycle()
+    val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
+    val formattedTimestamp = remember(timestamp) { viewModel.formatMillisToTimestamp(timestamp) }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
@@ -58,6 +60,7 @@ fun RecorderScreen(
             viewModel.onRecordTapped()
         } else {
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            permissionLauncher.launch(Manifest.permission.MODIFY_AUDIO_SETTINGS)
         }
     }
 
@@ -66,7 +69,16 @@ fun RecorderScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Waveform Visualizer
+        // Timestamp Tracker
+        Text(
+            text = formattedTimestamp,
+            style = MaterialTheme.typography.displayMedium,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Waveform
         WaveformVisualizer(
             waveformData = waveformData,
             modifier = Modifier

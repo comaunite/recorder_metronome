@@ -32,6 +32,12 @@ class RecorderEngine {
     private val _waveformData = MutableStateFlow(WaveformData())
     val waveformData: StateFlow<WaveformData> = _waveformData.asStateFlow()
 
+    private var timestampListener: ((Long) -> Unit)? = null
+
+    fun setTimestampListener(listener: ((Long) -> Unit)?) {
+        timestampListener = listener
+    }
+
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun startOrResumeRecording() {
         if (_state.value == RecordingState.RECORDING) return
@@ -54,14 +60,30 @@ class RecorderEngine {
 
         recordingThread = Thread {
             val buffer = ByteArray(bufferSize)
+            var totalBytes = 0L
+            val bytesPerMs = (sampleRate * 2) / 1000f // 2 bytes per sample (16-bit mono)
+            var lastWaveformUpdate = System.currentTimeMillis()
+            val waveformUpdateInterval = 333L // Update every ~333ms (3 times per second)
+
             while (_state.value == RecordingState.RECORDING) {
                 val read = recorder?.read(buffer, 0, buffer.size) ?: 0
                 if (read > 0) {
                     recordedData.write(buffer, 0, read)
-                    // Update waveform with the latest buffer
-                    val amplitudes = extractAmplitudes(buffer.copyOf(read), sampleCount = 64)
-                    val maxAmp = amplitudes.maxOrNull() ?: 1f
-                    _waveformData.value = WaveformData(amplitudes, maxAmp)
+                    totalBytes += read
+
+                    // Update timestamp on every read
+                    val millis = (totalBytes / bytesPerMs).toLong()
+                    timestampListener?.invoke(millis)
+
+                    // Update waveform only ~3 times per second
+                    val now = System.currentTimeMillis()
+                    if (now - lastWaveformUpdate >= waveformUpdateInterval) {
+                        val amplitudes = extractAmplitudes(buffer.copyOf(read), sampleCount = 200)
+                        val maxAmp = amplitudes.maxOrNull() ?: 1f
+                        _waveformData.value = WaveformData(amplitudes, maxAmp)
+                        println("WAVEFORM: Updated with ${amplitudes.size} amplitudes, max=$maxAmp")
+                        lastWaveformUpdate = now
+                    }
                 } else if (read < 0) {
                     println("RECORDING ERROR: $read")
                 }
@@ -94,10 +116,11 @@ class RecorderEngine {
             return
         }
 
-        // Update waveform for playback
-        val amplitudes = extractAmplitudes(audioBytes, sampleCount = 64)
+        // Update waveform for playback - show entire recording with more bars
+        val amplitudes = extractAmplitudes(audioBytes, sampleCount = 200)
         val maxAmp = amplitudes.maxOrNull() ?: 1f
         _waveformData.value = WaveformData(amplitudes, maxAmp)
+        println("WAVEFORM PLAYBACK: Updated with ${amplitudes.size} amplitudes, max=$maxAmp")
 
         _state.value = RecordingState.PLAYBACK
 
@@ -137,9 +160,13 @@ class RecorderEngine {
                 println("PLAYBACK: Play called, playState=${audioTrack.playState}")
 
                 val durationMs = (audioBytes.size.toFloat() / (sampleRate * 2)) * 1000
-
-                println("PLAYBACK: Sleeping for ${durationMs.toLong() + 500}ms")
-                Thread.sleep(durationMs.toLong() + 500)
+                val startTime = System.currentTimeMillis()
+                var elapsed: Long
+                do {
+                    elapsed = System.currentTimeMillis() - startTime
+                    timestampListener?.invoke(elapsed)
+                    Thread.sleep(16) // ~60Hz update
+                } while (elapsed < durationMs)
 
                 audioTrack.stop()
                 audioTrack.release()
@@ -148,6 +175,7 @@ class RecorderEngine {
                 println("PLAYBACK ERROR: ${e.message}")
             } finally {
                 _state.value = RecordingState.PAUSED
+                timestampListener?.invoke(0L)
             }
         }.start()
     }

@@ -28,13 +28,15 @@ fun WaveformVisualizer(
         drawRect(color = backgroundColor)
 
         val amplitudes = waveformData.amplitudes
+        println("VISUALIZER: Rendering ${amplitudes.size} amplitudes")
         if (amplitudes.isEmpty()) return@Canvas
 
         val width = size.width
         val height = size.height
         val centerY = height / 2f
         val maxAmplitude = waveformData.maxAmplitude.coerceAtLeast(1f)
-        val barWidth = width / amplitudes.size.coerceAtLeast(1)
+        val barWidth = (width / amplitudes.size.coerceAtLeast(1)) * 0.6f // Make bars thinner (60% of available space)
+        val barSpacing = (width / amplitudes.size.coerceAtLeast(1)) * 0.4f // 40% spacing
 
         // Draw center line
         drawLine(
@@ -48,10 +50,11 @@ fun WaveformVisualizer(
         amplitudes.forEachIndexed { index, amplitude ->
             val normalized = (abs(amplitude) / maxAmplitude).coerceIn(0f, 1f)
             val barHeight = (height / 2) * normalized
+            val xPosition = index * (barWidth + barSpacing)
             drawRect(
                 color = waveColor,
                 topLeft = Offset(
-                    index * barWidth,
+                    xPosition,
                     centerY - barHeight / 2
                 ),
                 size = Size(
