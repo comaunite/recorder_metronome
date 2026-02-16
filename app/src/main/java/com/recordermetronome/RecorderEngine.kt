@@ -29,7 +29,7 @@ class RecorderEngine {
     private val recordedData = ByteArrayOutputStream()
 
     private var pausedPlaybackPosition = 0L // Remember the position when paused
-    private var globalMaxAmplitude = 1f // Track max amplitude across the entire recording
+    private val maxAmplitude = 10000f
     private val amplitudeList = mutableListOf<Float>() // Persistent amplitude list across pause/resume
     private var totalProcessedBytes = 0L
 
@@ -55,7 +55,6 @@ class RecorderEngine {
         if (recordingState.value == RecordingState.IDLE) {
             println("RECORDING: Initializing new recording...")
             recordedData.reset()
-            globalMaxAmplitude = 1f
             amplitudeList.clear()
             lastWaveformProcessedBytes = 0L
             totalProcessedBytes = 0L
@@ -161,7 +160,7 @@ class RecorderEngine {
             ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
                 .coerceIn(0, amplitudes.size - 1)
 
-        waveformData.value = WaveformData(amplitudes, globalMaxAmplitude, currentPosition = startPositionIndex)
+        waveformData.value = WaveformData(amplitudes, maxAmplitude, currentPosition = startPositionIndex)
 
         recordingState.value = RecordingState.PLAYBACK
 
@@ -222,7 +221,7 @@ class RecorderEngine {
 
                         waveformData.value = WaveformData(
                             amplitudes,
-                            globalMaxAmplitude,
+                            maxAmplitude,
                             currentPosition = currentPosIndex
                         )
 
@@ -274,19 +273,12 @@ class RecorderEngine {
             // Add new amplitude to the growing list
             amplitudeList.addAll(newAmplitudes)
 
-            // Track global max but don't update the waveform data with it yet
-            // This prevents re-scaling of previous bars
-            val currentMaxAmp = newAmplitudes.maxOrNull() ?: 1f
-            if (currentMaxAmp > globalMaxAmplitude) {
-                globalMaxAmplitude = currentMaxAmp
-            }
-
             lastWaveformProcessedBytes = allData.size.toLong()
         }
 
         waveformData.value = WaveformData(
             amplitudeList.toList(),
-            globalMaxAmplitude,
+            maxAmplitude,
             currentPosition = amplitudeList.size - 1
         )
     }
@@ -331,7 +323,6 @@ class RecorderEngine {
 
         // Cleanup recording if running
         recordedData.reset()
-        globalMaxAmplitude = 1f // Reset for next recording
         amplitudeList.clear()
         lastWaveformProcessedBytes = 0L
         waveformData.value = WaveformData() // Clear waveform
