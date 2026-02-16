@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.ByteArrayOutputStream
-import kotlin.compareTo
 
 enum class RecordingState {
     IDLE, RECORDING, PAUSED, PLAYBACK
@@ -29,15 +28,16 @@ class RecorderEngine {
     private var playbackThread: Thread? = null
     private val recordedData = ByteArrayOutputStream()
 
-    private var pausedPlaybackPosition = 0L // Remember position when paused
-    private var globalMaxAmplitude = 1f // Track max amplitude across entire recording
+    private var pausedPlaybackPosition = 0L // Remember the position when paused
+    private var globalMaxAmplitude = 1f // Track max amplitude across the entire recording
     private val amplitudeList = mutableListOf<Float>() // Persistent amplitude list across pause/resume
-    private var lastProcessedBytes = 0L // Track how much data we've already processed
+    private var totalProcessedBytes = 0L
 
     private val recordingState = MutableStateFlow(RecordingState.IDLE)
     val recordingStateFlow: StateFlow<RecordingState> = recordingState.asStateFlow()
 
     private val waveformResolutionInMs = 50L // Update every ~50ms
+    private var lastWaveformProcessedBytes = 0L // Track the last processed point
     private val waveformData = MutableStateFlow(WaveformData())
     val waveformDataStateFlow: StateFlow<WaveformData> = waveformData.asStateFlow()
 
@@ -57,8 +57,11 @@ class RecorderEngine {
             recordedData.reset()
             globalMaxAmplitude = 1f
             amplitudeList.clear()
-            lastProcessedBytes = 0L
+            lastWaveformProcessedBytes = 0L
+            totalProcessedBytes = 0L
         }
+
+        pausedPlaybackPosition = 0L
 
         recorder = AudioRecord(
             MediaRecorder.AudioSource.MIC,
@@ -73,7 +76,6 @@ class RecorderEngine {
 
         recordingThread = Thread {
             val buffer = ByteArray(bufferSize)
-            var totalBytes = 0L
             val bytesPerMs = (sampleRate * 2) / 1000f // 2 bytes per sample (16-bit mono)
             var lastWaveformUpdate = System.currentTimeMillis()
 
@@ -84,9 +86,9 @@ class RecorderEngine {
 
                 if (read > 0) {
                     recordedData.write(buffer, 0, read)
-                    totalBytes += read
+                    totalProcessedBytes += read
 
-                    timestamp.value = (totalBytes / bytesPerMs).toLong()
+                    timestamp.value = (totalProcessedBytes / bytesPerMs).toLong()
 
                     val now = System.currentTimeMillis()
                     if (now - lastWaveformUpdate >= waveformResolutionInMs) {
@@ -147,13 +149,13 @@ class RecorderEngine {
         val amplitudes = if (amplitudeList.isNotEmpty()) {
             amplitudeList.toList()
         } else {
-            // Fallback: generate amplitudes if list is empty (shouldn't happen normally)
+            // Fallback: generate amplitudes if the list is empty (shouldn't happen normally)
             val durationSeconds = (audioBytes.size / (sampleRate * 2f))
             val targetBarCount = (durationSeconds * 3).toInt().coerceAtLeast(1)
             extractAmplitudes(audioBytes, sampleCount = targetBarCount)
         }
 
-        // Calculate starting position based on pausedPlaybackPosition
+        // Calculate a starting position based on pausedPlaybackPosition
         val totalDurationMs = (audioBytes.size / (sampleRate * 2f) * 1000).toLong()
         val startPositionIndex =
             ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
@@ -206,7 +208,6 @@ class RecorderEngine {
                     val durationMs = (bytesToWrite.toFloat() / (sampleRate * 2)) * 1000
                     val startTime = System.currentTimeMillis()
 
-                    // Non-blocking update loop
                     while (recordingState.value == RecordingState.PLAYBACK) {
                         val elapsed = System.currentTimeMillis() - startTime
                         pausedPlaybackPosition =
@@ -214,7 +215,7 @@ class RecorderEngine {
 
                         timestamp.value = pausedPlaybackPosition
 
-                        // Update waveform position based on current playback position
+                        // Update waveform position based on the current playback position
                         val currentPosIndex =
                             ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
                                 .coerceIn(0, amplitudes.size - 1)
@@ -263,7 +264,7 @@ class RecorderEngine {
     private fun updateWaveform() {
         // Extract amplitude from NEW data only (since last update)
         val allData = recordedData.toByteArray()
-        val newDataStartByte = lastProcessedBytes.toInt().coerceAtLeast(0)
+        val newDataStartByte = lastWaveformProcessedBytes.toInt().coerceAtLeast(0)
 
         if (newDataStartByte < allData.size) {
             val newDataBytes = allData.copyOfRange(newDataStartByte, allData.size)
@@ -280,7 +281,7 @@ class RecorderEngine {
                 globalMaxAmplitude = currentMaxAmp
             }
 
-            lastProcessedBytes = allData.size.toLong()
+            lastWaveformProcessedBytes = allData.size.toLong()
         }
 
         waveformData.value = WaveformData(
@@ -332,7 +333,7 @@ class RecorderEngine {
         recordedData.reset()
         globalMaxAmplitude = 1f // Reset for next recording
         amplitudeList.clear()
-        lastProcessedBytes = 0L
+        lastWaveformProcessedBytes = 0L
         waveformData.value = WaveformData() // Clear waveform
         timestamp.value = 0L
 
