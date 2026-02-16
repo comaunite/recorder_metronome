@@ -219,6 +219,8 @@ class RecorderEngine {
                             ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
                                 .coerceIn(0, amplitudes.size - 1)
 
+                        // TODO: Same as below, try to emit only the current position,
+                        //  instead of re-emitting the whole list just to update position
                         waveformData.value = WaveformData(
                             amplitudes,
                             maxAmplitude,
@@ -260,6 +262,9 @@ class RecorderEngine {
         playbackThread?.start()
     }
 
+
+    // TODO: Look into emitting only newly added values to amplitudes,
+    //  and let ViewData accumulate those into complete waveform
     private fun updateWaveform() {
         // Extract amplitude from NEW data only (since last update)
         val allData = recordedData.toByteArray()
@@ -325,6 +330,7 @@ class RecorderEngine {
         recordedData.reset()
         amplitudeList.clear()
         lastWaveformProcessedBytes = 0L
+        totalProcessedBytes = 0L
         waveformData.value = WaveformData() // Clear waveform
         timestamp.value = 0L
 
