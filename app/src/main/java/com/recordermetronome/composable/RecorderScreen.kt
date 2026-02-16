@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.Canvas
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,57 +32,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordermetronome.RecorderViewModel
 import com.recordermetronome.RecordingState
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-
-@Composable
-fun PauseIcon(modifier: Modifier = Modifier, tint: Color) {
-    Canvas(modifier = modifier) {
-        val barWidth = size.width * 0.25f
-        val barHeight = size.height
-        val spacing = size.width * 0.2f
-
-        // Left bar
-        drawRoundRect(
-            color = tint,
-            topLeft = Offset((size.width - 2 * barWidth - spacing) / 2f, 0f),
-            size = Size(barWidth, barHeight),
-            cornerRadius = CornerRadius(4.dp.toPx())
-        )
-
-        // Right bar
-        drawRoundRect(
-            color = tint,
-            topLeft = Offset((size.width - 2 * barWidth - spacing) / 2f + barWidth + spacing, 0f),
-            size = Size(barWidth, barHeight),
-            cornerRadius = CornerRadius(4.dp.toPx())
-        )
-    }
-}
-
-@Composable
-fun StopIcon(modifier: Modifier = Modifier, tint: Color) {
-    Canvas(modifier = modifier) {
-        drawRoundRect(
-            color = tint,
-            topLeft = Offset(0f, 0f),
-            size = size,
-            cornerRadius = CornerRadius(4.dp.toPx())
-        )
-    }
-}
-
-@Composable
-fun RecordIcon(modifier: Modifier = Modifier, tint: Color) {
-    Canvas(modifier = modifier) {
-        drawCircle(
-            color = tint,
-            radius = size.minDimension / 2f
-        )
-    }
-}
 
 @Composable
 fun RecorderScreen(
@@ -93,7 +40,6 @@ fun RecorderScreen(
 ) {
     val context = LocalContext.current
     val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
-    val pendingData = viewModel.pendingAudioData
     val waveformData by viewModel.waveformData.collectAsStateWithLifecycle()
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
     val formattedTimestamp = remember(timestamp) { viewModel.formatMillisToTimestamp(timestamp) }
@@ -152,192 +98,47 @@ fun RecorderScreen(
         ) {
             when (state) {
                 RecordingState.IDLE -> {
-                    // Play button (disabled)
-                    IconButton(
-                        onClick = {},
-                        modifier = Modifier.size(56.dp),
-                        enabled = false
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "Play",
-                            modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        )
-                    }
+                    PlayButton(false, {})
 
-                    // Record button (big, enabled)
-                    FilledTonalIconButton(
-                        onClick = { handleRecordAction() },
-                        modifier = Modifier.size(80.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = Color.Red,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        RecordIcon(
-                            modifier = Modifier.size(40.dp),
-                            tint = Color.White
-                        )
-                    }
+                    RecordButton(true, { handleRecordAction() })
 
-                    // Stop button (disabled)
-                    IconButton(
-                        onClick = {},
-                        modifier = Modifier.size(56.dp),
-                        enabled = false
-                    ) {
-                        StopIcon(
-                            modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        )
-                    }
+                    StopButton(false, {})
                 }
 
                 RecordingState.RECORDING -> {
-                    // Play button (disabled)
-                    IconButton(
-                        onClick = {},
-                        modifier = Modifier.size(56.dp),
-                        enabled = false
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "Play",
-                            modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        )
-                    }
+                    PlayButton(false, {})
 
-                    // Pause recording button (big, enabled)
-                    FilledTonalIconButton(
-                        onClick = { viewModel.onPauseRecordTapped() },
-                        modifier = Modifier.size(80.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        )
-                    ) {
-                        PauseIcon(
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    PauseRecordButton({ viewModel.onPauseRecordTapped() })
 
-                    // Stop button (enabled)
-                    IconButton(
-                        onClick = { viewModel.onStopTapped() },
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        StopIcon(
-                            modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    StopButton(true, { viewModel.onStopTapped() })
                 }
 
                 RecordingState.PAUSED -> {
-                    // Play button (enabled)
-                    IconButton(
-                        onClick = { viewModel.onPlaybackTapped() },
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "Play",
-                            modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    PlayButton(true, { viewModel.onPlaybackTapped() })
 
-                    // Record button (big, enabled)
-                    FilledTonalIconButton(
-                        onClick = { viewModel.onRecordTapped() },
-                        modifier = Modifier.size(80.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = Color.Red,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        RecordIcon(
-                            modifier = Modifier.size(40.dp),
-                            tint = Color.White
-                        )
-                    }
+                    RecordButton(true, { handleRecordAction() })
 
-                    // Stop button (enabled)
-                    IconButton(
-                        onClick = { viewModel.onStopTapped() },
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        StopIcon(
-                            modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    StopButton(true, { viewModel.onStopTapped() })
                 }
 
                 RecordingState.PLAYBACK -> {
-                    // Pause playback button (enabled)
-                    IconButton(
-                        onClick = { viewModel.onPausePlaybackTapped() },
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        PauseIcon(
-                            modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    PausePlaybackButton({ viewModel.onPausePlaybackTapped() })
 
-                    // Record button (big, disabled)
-                    FilledTonalIconButton(
-                        onClick = {},
-                        modifier = Modifier.size(80.dp),
-                        enabled = false,
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                            disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.38f),
-                            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        )
-                    ) {
-                        RecordIcon(
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        )
-                    }
+                    RecordButton(false, {})
 
-                    // Stop button (enabled)
-                    IconButton(
-                        onClick = { viewModel.onStopTapped() },
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        StopIcon(
-                            modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    StopButton(true, { viewModel.onStopTapped() })
                 }
             }
         }
 
-        if (pendingData != null) {
-            AlertDialog(
-                onDismissRequest = { viewModel.onDiscardData() },
-                title = { Text("Save Recording?") },
-                text = { Text("Do you want to save this recording or discard it?") },
-                confirmButton = {
-                    Button(onClick = {
-                        viewModel.onSaveData(context, "recording_${System.currentTimeMillis()}")
-                    }) {
-                        Text("Save")
-                    }
+        val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
+
+        if (showSaveDialog) {
+            SaveRecordingDialog(
+                onSave = {
+                    viewModel.onSaveData(context, "recording_${System.currentTimeMillis()}")
                 },
-                dismissButton = {
-                    Button(onClick = { viewModel.onDiscardData() }) {
-                        Text("Discard")
-                    }
-                }
+                onDiscard = { viewModel.onDiscardData() }
             )
         }
     }

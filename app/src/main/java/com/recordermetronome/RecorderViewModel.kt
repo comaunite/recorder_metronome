@@ -8,6 +8,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class RecorderViewModel : ViewModel() {
     private val engine = RecorderEngine()
@@ -16,6 +18,9 @@ class RecorderViewModel : ViewModel() {
     // State to control the "Save or Discard" dialog
     var pendingAudioData by mutableStateOf<ByteArray?>(null)
         private set
+
+    private val _showSaveDialog = MutableStateFlow(false)
+    val showSaveDialog = _showSaveDialog.asStateFlow()
 
     val waveformData = engine.waveformDataStateFlow
     val timestamp = engine.timestampStateFlow
@@ -46,13 +51,17 @@ class RecorderViewModel : ViewModel() {
             // Extract the data out of the engine on stop
             pendingAudioData = data
         }
+
+        _showSaveDialog.value = true
     }
 
     fun onDiscardData() {
+        _showSaveDialog.value = false
         TODO("Not yet implemented")
     }
 
     fun onSaveData(context: Context, string: String) {
+        _showSaveDialog.value = false
         TODO("Not yet implemented")
     }
 }
