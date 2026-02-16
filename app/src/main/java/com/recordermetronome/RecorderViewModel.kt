@@ -11,7 +11,7 @@ import androidx.lifecycle.ViewModel
 
 class RecorderViewModel : ViewModel() {
     private val engine = RecorderEngine()
-    val state = engine.recordingStateFlow
+    val recordingStateFlow = engine.recordingStateFlow
 
     // State to control the "Save or Discard" dialog
     var pendingAudioData by mutableStateOf<ByteArray?>(null)
@@ -26,9 +26,13 @@ class RecorderViewModel : ViewModel() {
         val minutes = (millis % 3600000) / 60000
         val seconds = (millis % 60000) / 1000
         val ms = millis % 1000
-        return String.format("%02d:%02d:%02d.%01d", hours, minutes, seconds, ms / 100)
-    }
 
+        if (hours > 0) {
+            return String.format("%02d:%02d:%02d.%01d", hours, minutes, seconds, ms / 100)
+        }
+
+        return String.format("%02d:%02d.%01d", minutes, seconds, ms / 100)
+    }
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun onRecordTapped() = engine.startOrResumeRecording()

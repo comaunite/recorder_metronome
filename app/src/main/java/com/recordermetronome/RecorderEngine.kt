@@ -25,14 +25,13 @@ class RecorderEngine {
 
     private var recorder: AudioRecord? = null
     private var recordingThread: Thread? = null
-    private var playbackThread: Thread? = null
     private var audioTrack: AudioTrack? = null
+    private var playbackThread: Thread? = null
     private val recordedData = ByteArrayOutputStream()
 
     private var pausedPlaybackPosition = 0L // Remember position when paused
     private var globalMaxAmplitude = 1f // Track max amplitude across entire recording
-    private val amplitudeList =
-        mutableListOf<Float>() // Persistent amplitude list across pause/resume
+    private val amplitudeList = mutableListOf<Float>() // Persistent amplitude list across pause/resume
     private var lastProcessedBytes = 0L // Track how much data we've already processed
 
     private val recordingState = MutableStateFlow(RecordingState.IDLE)
@@ -154,17 +153,13 @@ class RecorderEngine {
             extractAmplitudes(audioBytes, sampleCount = targetBarCount)
         }
 
-        // Use the global max amplitude from recording for consistent scaling
-        val maxAmp = globalMaxAmplitude
-
         // Calculate starting position based on pausedPlaybackPosition
         val totalDurationMs = (audioBytes.size / (sampleRate * 2f) * 1000).toLong()
         val startPositionIndex =
             ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
                 .coerceIn(0, amplitudes.size - 1)
 
-        waveformData.value = WaveformData(amplitudes, maxAmp, currentPosition = startPositionIndex)
-        println("WAVEFORM PLAYBACK: Updated with ${amplitudes.size} amplitudes, globalMax=$maxAmp, startPos=$startPositionIndex")
+        waveformData.value = WaveformData(amplitudes, globalMaxAmplitude, currentPosition = startPositionIndex)
 
         recordingState.value = RecordingState.PLAYBACK
 
@@ -205,7 +200,6 @@ class RecorderEngine {
                         audioTrack?.write(audioBytes, startPositionBytes, bytesToWrite) ?: 0
                     println("PLAYBACK: Written $written bytes")
 
-                    audioTrack?.setVolume(AudioTrack.getMaxVolume())
                     audioTrack?.play()
                     println("PLAYBACK: Play called, playState=${audioTrack?.playState}")
 
@@ -224,6 +218,7 @@ class RecorderEngine {
                         val currentPosIndex =
                             ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
                                 .coerceIn(0, amplitudes.size - 1)
+
                         waveformData.value = WaveformData(
                             amplitudes,
                             globalMaxAmplitude,

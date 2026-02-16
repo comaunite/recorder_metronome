@@ -92,7 +92,7 @@ fun RecorderScreen(
     viewModel: RecorderViewModel
 ) {
     val context = LocalContext.current
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
     val pendingData = viewModel.pendingAudioData
     val waveformData by viewModel.waveformData.collectAsStateWithLifecycle()
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
