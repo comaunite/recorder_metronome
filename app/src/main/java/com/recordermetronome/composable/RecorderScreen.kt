@@ -12,8 +12,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -24,15 +30,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.recordermetronome.RecorderViewModel
+import com.recordermetronome.view_models.RecorderViewModel
 import com.recordermetronome.RecordingState
+import com.recordermetronome.composable.components.PausePlaybackButton
+import com.recordermetronome.composable.components.PauseRecordButton
+import com.recordermetronome.composable.components.PlayButton
+import com.recordermetronome.composable.components.RecordButton
+import com.recordermetronome.composable.components.StopButton
+import com.recordermetronome.composable.components.WaveformVisualizer
 import com.recordermetronome.composable.dialogs.ExitRecordingDialog
 import com.recordermetronome.composable.dialogs.StopRecordingDialog
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecorderScreen(
     modifier: Modifier = Modifier,
-    viewModel: RecorderViewModel
+    viewModel: RecorderViewModel,
+    onNavigateToFileExplorer: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
@@ -81,10 +95,28 @@ fun RecorderScreen(
     }
 
     Column(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier.fillMaxSize()
     ) {
+        // Top App Bar with file explorer button
+        TopAppBar(
+            title = { Text("Recorder") },
+            actions = {
+                IconButton(onClick = onNavigateToFileExplorer) {
+                    Icon(
+                        imageVector = Icons.Filled.Menu,
+                        contentDescription = "View recordings"
+                    )
+                }
+            }
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         // Timestamp Tracker
         Text(
             text = formattedTimestamp,
@@ -95,12 +127,12 @@ fun RecorderScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         // Waveform
-        WaveformVisualizer(
-            waveformData = waveformData,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(150.dp)
-        )
+            WaveformVisualizer(
+                waveformData = waveformData,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+            )
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -174,6 +206,7 @@ fun RecorderScreen(
                 },
                 onCancel = { viewModel.onBackDialogCancel() }
             )
+        }
         }
     }
 }

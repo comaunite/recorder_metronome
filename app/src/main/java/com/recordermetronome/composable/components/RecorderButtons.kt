@@ -1,4 +1,4 @@
-package com.recordermetronome.composable
+package com.recordermetronome.composable.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size

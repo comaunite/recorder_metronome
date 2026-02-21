@@ -1,4 +1,4 @@
-package com.recordermetronome
+package com.recordermetronome.view_models
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -6,6 +6,8 @@ import android.content.Context
 import androidx.annotation.RequiresPermission
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.recordermetronome.RecorderEngine
+import com.recordermetronome.RecordingState
 import com.recordermetronome.data.WaveformData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,7 +30,6 @@ class RecorderViewModel : ViewModel() {
     private val _showBackDialog = MutableStateFlow(false)
     val showBackDialog = _showBackDialog.asStateFlow()
 
-    // Accumulated waveform data for the UI
     private val _accumulatedWaveformData = MutableStateFlow(WaveformData())
     val accumulatedWaveformData = _accumulatedWaveformData.asStateFlow()
 
