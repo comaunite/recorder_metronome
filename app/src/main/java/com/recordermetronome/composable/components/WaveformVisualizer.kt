@@ -75,27 +75,29 @@ fun WaveformVisualizer(
         val startIndex = (currentPosition - barsToLeft).coerceAtLeast(0)
         val endIndex = (currentPosition + barsToRight).coerceAtMost(amplitudes.size - 1)
 
-        // Draw amplitude bars
-        for (i in startIndex..endIndex) {
-            val amplitude = amplitudes[i]
-            val normalized = (abs(amplitude) / maxAmplitude).coerceIn(0f, 1f)
-            val barHeight = (height / 2) * normalized
+        // Draw amplitude bars only if we have a valid range
+        if (startIndex <= endIndex) {
+            for (i in startIndex..endIndex) {
+                val amplitude = amplitudes[i]
+                val normalized = (abs(amplitude) / maxAmplitude).coerceIn(0f, 1f)
+                val barHeight = (height / 2) * normalized
 
-            // Calculate x position relative to current position
-            val offsetFromCurrent = i - currentPosition
-            val xPosition = centerX + (offsetFromCurrent * barFullWidth)
+                // Calculate x position relative to current position
+                val offsetFromCurrent = i - currentPosition
+                val xPosition = centerX + (offsetFromCurrent * barFullWidth)
 
-            drawRect(
-                color = waveColor,
-                topLeft = Offset(
-                    xPosition,
-                    centerY - barHeight / 2
-                ),
-                size = Size(
-                    barWidth.coerceAtLeast(1f),
-                    barHeight.coerceAtLeast(1f)
+                drawRect(
+                    color = waveColor,
+                    topLeft = Offset(
+                        xPosition,
+                        centerY - barHeight / 2
+                    ),
+                    size = Size(
+                        barWidth.coerceAtLeast(1f),
+                        barHeight.coerceAtLeast(1f)
+                    )
                 )
-            )
+            }
         }
 
         // Draw red playback line on top
