@@ -125,5 +125,13 @@ object RecordingFileUtil {
         val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.US)
         return dateFormat.format(Date(millis))
     }
+
+    /**
+     * Generate default file name for new recordings
+     */
+    fun generateDefaultFileName(): String {
+        val dateFormat = SimpleDateFormat("ddMMyyyy_HHmmss", Locale.US)
+        return "Recording ${dateFormat.format(Date())}"
+    }
 }
 

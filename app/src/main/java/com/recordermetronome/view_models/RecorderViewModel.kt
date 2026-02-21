@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.recordermetronome.RecorderEngine
 import com.recordermetronome.RecordingState
 import com.recordermetronome.data.WaveformData
+import com.recordermetronome.util.RecordingFileUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -98,10 +99,6 @@ class RecorderViewModel : ViewModel() {
         return String.format("%02d:%02d.%01d", minutes, seconds, ms / 100)
     }
 
-    fun generateDefaultFileName(): String {
-        val dateFormat = SimpleDateFormat("ddMMyyyy_HHmmss", Locale.US)
-        return "Recording ${dateFormat.format(Date())}"
-    }
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun onRecordTapped() = engine.startOrResumeRecording()
@@ -113,7 +110,7 @@ class RecorderViewModel : ViewModel() {
     fun onStopTapped() {
         engine.pause()
 
-        _generatedFileName.value = generateDefaultFileName()
+        _generatedFileName.value = RecordingFileUtil.generateDefaultFileName()
         _showSaveDialog.value = true
     }
 
@@ -160,7 +157,7 @@ class RecorderViewModel : ViewModel() {
 
     fun onBackDialogSave(context: Context, callback: () -> Unit) {
         _showBackDialog.value = false
-        val fileName = generateDefaultFileName()
+        val fileName = RecordingFileUtil.generateDefaultFileName()
         engine.finalize { audioData ->
             saveToDisk(context, fileName, audioData)
         }
