@@ -151,9 +151,9 @@ fun RecorderScreen(
         if (showSaveDialog) {
             StopRecordingDialog(
                 onSave = { fileName ->
-                    viewModel.onSaveData(context, fileName)
+                    viewModel.onStopDialogSave(context, fileName)
                 },
-                onCancel = { viewModel.onCancelSave() },
+                onCancel = { viewModel.onStopDialogCancel() },
                 preGeneratedName = generatedFileName
             )
         }
@@ -163,16 +163,16 @@ fun RecorderScreen(
         if (showBackDialog && activity != null) {
             ExitRecordingDialog(
                 onSave = {
-                    viewModel.onBackSave(context) {
+                    viewModel.onBackDialogSave(context) {
                         activity.finish()
                     }
                 },
                 onDiscard = {
-                    viewModel.onBackDiscard {
+                    viewModel.onBackDialogDiscard {
                         activity.finish()
                     }
                 },
-                onCancel = { viewModel.onBackCancel() }
+                onCancel = { viewModel.onBackDialogCancel() }
             )
         }
     }
