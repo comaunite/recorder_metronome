@@ -17,16 +17,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.recordermetronome.data.RecordingFile
+import com.recordermetronome.util.FilenameValidator
 
 @Composable
 fun StopRecordingDialog(
     onSave: (String) -> Unit,
     onCancel: () -> Unit,
-    preGeneratedName: String = ""
+    preGeneratedName: String = "",
+    existingRecordings: List<RecordingFile> = emptyList()
 ) {
     var fileName by remember { mutableStateOf(preGeneratedName) }
+    val validationResult = FilenameValidator.validateNewFilename(fileName, existingRecordings)
+    val isValid = validationResult.isValid
 
     AlertDialog(
         onDismissRequest = onCancel,
@@ -47,15 +53,25 @@ fun StopRecordingDialog(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(
-                        onDone = { if (fileName.isNotBlank()) onSave(fileName) }
+                        onDone = { if (isValid) onSave(fileName) }
                     )
                 )
+
+                // Display error message
+                if (!isValid && fileName.isNotEmpty()) {
+                    Text(
+                        text = validationResult.errorMessage,
+                        color = Color.Red,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = { if (fileName.isNotBlank()) onSave(fileName) },
-                enabled = fileName.isNotBlank()
+                onClick = { if (isValid) onSave(fileName) },
+                enabled = isValid
             ) {
                 Text("Save")
             }

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.recordermetronome.data.RecordingFile
+import com.recordermetronome.util.FilenameValidator
 
 @Composable
 fun RenameRecordingDialog(
@@ -32,13 +33,12 @@ fun RenameRecordingDialog(
     renameText: String,
     onRenameTextChange: (String) -> Unit
 ) {
-    // Check if the name is valid (not blank, not duplicate, and not the same as current)
-    val isDuplicate = existingRecordings.any {
-        it.name == renameText && it.name != currentRecording.name
-    }
-    val isBlank = renameText.isBlank()
-    val isSameAsOriginal = renameText == currentRecording.name
-    val isValid = !isBlank && !isDuplicate && !isSameAsOriginal
+    val validationResult = FilenameValidator.validateRenameFilename(
+        renameText,
+        currentRecording.name,
+        existingRecordings
+    )
+    val isValid = validationResult.isValid
 
     Dialog(
         onDismissRequest = onCancel,
@@ -69,28 +69,10 @@ fun RenameRecordingDialog(
                 label = { Text("Recording name") }
             )
 
-            // Display error messages
-            if (isBlank && renameText.isNotEmpty()) {
+            // Display error message
+            if (!isValid && renameText.isNotEmpty()) {
                 Text(
-                    text = "Name cannot be empty",
-                    color = Color.Red,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .padding(top = 8.dp)
-                        .align(Alignment.Start)
-                )
-            } else if (isDuplicate) {
-                Text(
-                    text = "A recording with this name already exists",
-                    color = Color.Red,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .padding(top = 8.dp)
-                        .align(Alignment.Start)
-                )
-            } else if (isSameAsOriginal) {
-                Text(
-                    text = "New name must be different from the current name",
+                    text = validationResult.errorMessage,
                     color = Color.Red,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier

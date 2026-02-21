@@ -22,24 +22,28 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.recordermetronome.view_models.RecorderViewModel
 import com.recordermetronome.RecordingState
 import com.recordermetronome.composable.components.PausePlaybackButton
 import com.recordermetronome.composable.components.PauseRecordButton
+import com.recordermetronome.composable.dialogs.ExitRecordingDialog
+import com.recordermetronome.composable.dialogs.StopRecordingDialog
+import com.recordermetronome.util.RecordingFileUtil
 import com.recordermetronome.composable.components.PlayButton
 import com.recordermetronome.composable.components.RecordButton
 import com.recordermetronome.composable.components.StopButton
 import com.recordermetronome.composable.components.WaveformVisualizer
-import com.recordermetronome.composable.dialogs.ExitRecordingDialog
-import com.recordermetronome.composable.dialogs.StopRecordingDialog
+import com.recordermetronome.view_models.RecorderViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +57,12 @@ fun RecorderScreen(
     val waveformData by viewModel.accumulatedWaveformData.collectAsStateWithLifecycle()
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
     val formattedTimestamp = remember(timestamp) { viewModel.formatMillisToTimestamp(timestamp) }
+
+    // Load existing recordings for validation
+    var existingRecordings by remember { mutableStateOf(emptyList<com.recordermetronome.data.RecordingFile>()) }
+    LaunchedEffect(Unit) {
+        existingRecordings = RecordingFileUtil.getRecordingFiles(context)
+    }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
@@ -186,7 +196,8 @@ fun RecorderScreen(
                         viewModel.onStopDialogSave(context, fileName, onNavigateToFileExplorer)
                     },
                     onCancel = { viewModel.onStopDialogCancel() },
-                    preGeneratedName = generatedFileName
+                    preGeneratedName = generatedFileName,
+                    existingRecordings = existingRecordings
                 )
             }
 
