@@ -57,6 +57,7 @@ object RecordingFileUtil {
         return try {
             RandomAccessFile(file, "r").use { raf ->
                 70L
+                // TODO: Fix the length calculation
 //                // Seek to byte rate position (at offset 28 in WAV header)
 //                raf.seek(24)
 //                val byteRateBytes = ByteArray(4)

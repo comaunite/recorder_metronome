@@ -121,11 +121,12 @@ class RecorderViewModel : ViewModel() {
         _showSaveDialog.value = false
     }
 
-    fun onStopDialogSave(context: Context, fileName: String) {
+    fun onStopDialogSave(context: Context, fileName: String, callback: () -> Unit) {
         _showSaveDialog.value = false
 
         engine.finalize { audioData ->
             saveToDisk(context, fileName, audioData)
+            callback()
         }
     }
 
@@ -157,19 +158,19 @@ class RecorderViewModel : ViewModel() {
         _showBackDialog.value = true
     }
 
-    fun onBackDialogSave(context: Context, onExitApp: () -> Unit) {
+    fun onBackDialogSave(context: Context, callback: () -> Unit) {
         _showBackDialog.value = false
         val fileName = generateDefaultFileName()
         engine.finalize { audioData ->
             saveToDisk(context, fileName, audioData)
         }
-        onExitApp()
+        callback()
     }
 
-    fun onBackDialogDiscard(onExitApp: () -> Unit) {
+    fun onBackDialogDiscard(callback: () -> Unit) {
         _showBackDialog.value = false
         engine.finalize { }
-        onExitApp()
+        callback()
     }
 
     fun onBackDialogCancel() {

@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             RecorderMetronomeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    val currentScreen = remember { mutableStateOf<Screen>(Screen.Recorder) }
+                    val currentScreen = remember { mutableStateOf<Screen>(Screen.FileExplorer) }
 
                     when (currentScreen.value) {
                         Screen.Recorder -> {
@@ -46,9 +46,6 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.padding(innerPadding),
                                 recorderViewModel = recorderViewModel,
                                 fileExplorerViewModel = fileExplorerViewModel,
-                                onNavigateBack = {
-                                    currentScreen.value = Screen.Recorder
-                                },
                                 onStartRecording = {
                                     currentScreen.value = Screen.Recorder
                                 }

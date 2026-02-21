@@ -101,7 +101,7 @@ fun RecorderScreen(
         TopAppBar(
             title = { Text("Recorder") },
             actions = {
-                IconButton(onClick = onNavigateToFileExplorer) {
+                IconButton(onClick = { viewModel.onBackPressed() }) {
                     Icon(
                         imageVector = Icons.Filled.Menu,
                         contentDescription = "View recordings"
@@ -117,16 +117,16 @@ fun RecorderScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-        // Timestamp Tracker
-        Text(
-            text = formattedTimestamp,
-            style = MaterialTheme.typography.displayMedium,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
+            // Timestamp Tracker
+            Text(
+                text = formattedTimestamp,
+                style = MaterialTheme.typography.displayMedium,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
 
-        Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-        // Waveform
+            // Waveform
             WaveformVisualizer(
                 waveformData = waveformData,
                 modifier = Modifier
@@ -134,79 +134,79 @@ fun RecorderScreen(
                     .height(150.dp)
             )
 
-        Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-        // Three-button layout with state-based logic
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            when (state) {
-                RecordingState.IDLE -> {
-                    PlayButton(false, {})
+            // Three-button layout with state-based logic
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                when (state) {
+                    RecordingState.IDLE -> {
+                        PlayButton(false, {})
 
-                    RecordButton(true, { handleRecordAction() })
+                        RecordButton(true, { handleRecordAction() })
 
-                    StopButton(false, {})
-                }
+                        StopButton(false, {})
+                    }
 
-                RecordingState.RECORDING -> {
-                    PlayButton(false, {})
+                    RecordingState.RECORDING -> {
+                        PlayButton(false, {})
 
-                    PauseRecordButton({ viewModel.onPauseRecordTapped() })
+                        PauseRecordButton({ viewModel.onPauseRecordTapped() })
 
-                    StopButton(true, { viewModel.onStopTapped() })
-                }
+                        StopButton(true, { viewModel.onStopTapped() })
+                    }
 
-                RecordingState.PAUSED -> {
-                    PlayButton(true, { viewModel.onPlaybackTapped() })
+                    RecordingState.PAUSED -> {
+                        PlayButton(true, { viewModel.onPlaybackTapped() })
 
-                    RecordButton(true, { handleRecordAction() })
+                        RecordButton(true, { handleRecordAction() })
 
-                    StopButton(true, { viewModel.onStopTapped() })
-                }
+                        StopButton(true, { viewModel.onStopTapped() })
+                    }
 
-                RecordingState.PLAYBACK -> {
-                    PausePlaybackButton({ viewModel.onPausePlaybackTapped() })
+                    RecordingState.PLAYBACK -> {
+                        PausePlaybackButton({ viewModel.onPausePlaybackTapped() })
 
-                    RecordButton(false, {})
+                        RecordButton(false, {})
 
-                    StopButton(true, { viewModel.onStopTapped() })
+                        StopButton(true, { viewModel.onStopTapped() })
+                    }
                 }
             }
-        }
 
-        val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
-        val generatedFileName by viewModel.generatedFileName.collectAsStateWithLifecycle()
+            val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
+            val generatedFileName by viewModel.generatedFileName.collectAsStateWithLifecycle()
 
-        if (showSaveDialog) {
-            StopRecordingDialog(
-                onSave = { fileName ->
-                    viewModel.onStopDialogSave(context, fileName)
-                },
-                onCancel = { viewModel.onStopDialogCancel() },
-                preGeneratedName = generatedFileName
-            )
-        }
+            if (showSaveDialog) {
+                StopRecordingDialog(
+                    onSave = { fileName ->
+                        viewModel.onStopDialogSave(context, fileName, onNavigateToFileExplorer)
+                    },
+                    onCancel = { viewModel.onStopDialogCancel() },
+                    preGeneratedName = generatedFileName
+                )
+            }
 
-        val showBackDialog by viewModel.showBackDialog.collectAsStateWithLifecycle()
+            val showBackDialog by viewModel.showBackDialog.collectAsStateWithLifecycle()
 
-        if (showBackDialog && activity != null) {
-            ExitRecordingDialog(
-                onSave = {
-                    viewModel.onBackDialogSave(context) {
-                        activity.finish()
-                    }
-                },
-                onDiscard = {
-                    viewModel.onBackDialogDiscard {
-                        activity.finish()
-                    }
-                },
-                onCancel = { viewModel.onBackDialogCancel() }
-            )
-        }
+            if (showBackDialog) {
+                ExitRecordingDialog(
+                    onSave = {
+                        viewModel.onBackDialogSave(context) {
+                            onNavigateToFileExplorer()
+                        }
+                    },
+                    onDiscard = {
+                        viewModel.onBackDialogDiscard {
+                            onNavigateToFileExplorer()
+                        }
+                    },
+                    onCancel = { viewModel.onBackDialogCancel() }
+                )
+            }
         }
     }
 }

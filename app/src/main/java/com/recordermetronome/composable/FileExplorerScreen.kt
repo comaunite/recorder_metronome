@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,11 +30,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.recordermetronome.view_models.FileExplorerViewModel
-import com.recordermetronome.view_models.RecorderViewModel
 import com.recordermetronome.composable.components.RecordButton
 import com.recordermetronome.data.RecordingFile
 import com.recordermetronome.util.RecordingFileUtil
+import com.recordermetronome.view_models.FileExplorerViewModel
+import com.recordermetronome.view_models.RecorderViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +42,6 @@ fun FileExplorerScreen(
     modifier: Modifier = Modifier,
     recorderViewModel: RecorderViewModel,
     fileExplorerViewModel: FileExplorerViewModel,
-    onNavigateBack: () -> Unit,
     onStartRecording: () -> Unit
 ) {
     val context = LocalContext.current
@@ -80,17 +79,8 @@ fun FileExplorerScreen(
     Column(
         modifier = modifier.fillMaxSize()
     ) {
-        // Top App Bar
         TopAppBar(
             title = { Text("Recordings") },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
-            }
         )
 
         // Recordings List
