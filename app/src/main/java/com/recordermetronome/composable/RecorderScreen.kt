@@ -132,13 +132,15 @@ fun RecorderScreen(
         }
 
         val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
+        val generatedFileName by viewModel.generatedFileName.collectAsStateWithLifecycle()
 
         if (showSaveDialog) {
             SaveRecordingDialog(
-                onSave = {
-                    viewModel.onSaveData(context, "recording_${System.currentTimeMillis()}")
+                onSave = { fileName ->
+                    viewModel.onSaveData(context, fileName)
                 },
-                onDiscard = { viewModel.onDiscardData() }
+                onCancel = { viewModel.onCancelSave() },
+                preGeneratedName = generatedFileName
             )
         }
     }

@@ -4,26 +4,26 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.annotation.RequiresPermission
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.recordermetronome.data.WaveformData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class RecorderViewModel : ViewModel() {
     private val engine = RecorderEngine()
     val recordingStateFlow = engine.recordingStateFlow
 
-    // State to control the "Save or Discard" dialog
-    var pendingAudioData by mutableStateOf<ByteArray?>(null)
-        private set
-
     private val _showSaveDialog = MutableStateFlow(false)
     val showSaveDialog = _showSaveDialog.asStateFlow()
+
+    private val _generatedFileName = MutableStateFlow("")
+    val generatedFileName = _generatedFileName.asStateFlow()
 
     // Accumulated waveform data for the UI
     private val _accumulatedWaveformData = MutableStateFlow(WaveformData())
@@ -94,29 +94,57 @@ class RecorderViewModel : ViewModel() {
         return String.format("%02d:%02d.%01d", minutes, seconds, ms / 100)
     }
 
+    fun generateDefaultFileName(): String {
+        val dateFormat = SimpleDateFormat("ddMMyyyy_HHmmss", Locale.US)
+        return "Recording ${dateFormat.format(Date())}"
+    }
+
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun onRecordTapped() = engine.startOrResumeRecording()
-    fun onPauseRecordTapped() = engine.pauseRecording()
+    fun onPauseRecordTapped() = engine.pause()
 
     fun onPlaybackTapped() = engine.playBackCurrentStream()
-    fun onPausePlaybackTapped() = engine.pausePlayback()
+    fun onPausePlaybackTapped() = engine.pause()
 
     fun onStopTapped() {
-        engine.stopAndFinalize { data ->
-            // Extract the data out of the engine on stop
-            pendingAudioData = data
-        }
+        engine.pause()
 
+        _generatedFileName.value = generateDefaultFileName()
         _showSaveDialog.value = true
     }
 
-    fun onDiscardData() {
+    fun onCancelSave() {
         _showSaveDialog.value = false
-        pendingAudioData = null
     }
 
-    fun onSaveData(context: Context, string: String) {
+    fun onSaveData(context: Context, fileName: String) {
         _showSaveDialog.value = false
-        TODO("Not yet implemented")
+
+        engine.finalize { audioData ->
+            saveToDisk(context, fileName, audioData)
+        }
+    }
+
+    private fun saveToDisk(context: Context, fileName: String, audioData: ByteArray) {
+        if (audioData.isNotEmpty()) {
+            try {
+                // Create recordings directory
+                val recordingsDir = File(context.getExternalFilesDir(null), "recordings")
+                if (!recordingsDir.exists()) {
+                    recordingsDir.mkdirs()
+                }
+
+                // Create file with .wav extension
+                val outputFile = File(recordingsDir, "$fileName.wav")
+
+                // Write audio data to file
+                outputFile.writeBytes(audioData)
+
+                println("Recording saved: ${outputFile.absolutePath}")
+            } catch (e: Exception) {
+                println("Error saving recording: ${e.message}")
+                e.printStackTrace()
+            }
+        }
     }
 }

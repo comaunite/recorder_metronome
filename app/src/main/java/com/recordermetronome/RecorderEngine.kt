@@ -114,30 +114,28 @@ class RecorderEngine {
         }.also { it.start() }
     }
 
-    fun pauseRecording() {
-        if (recordingState.value == RecordingState.RECORDING) {
-            println("RECORDING: Pausing recording...")
-            recordingState.value = RecordingState.PAUSED
-        } else {
-            println("RECORDING: Not recording, ignoring pause request")
-        }
-    }
-
-    fun pausePlayback() {
-        if (recordingState.value == RecordingState.PLAYBACK) {
-            recordingState.value = RecordingState.PAUSED
-            audioTrack?.pause()
-            audioTrack?.flush()
-            println("PLAYBACK: Paused at ${pausedPlaybackPosition}ms")
-        } else {
-            println("PLAYBACK: Not playing, ignoring pause request")
+    fun pause() {
+        when (recordingState.value) {
+            RecordingState.RECORDING -> {
+                println("RECORDING: Pausing recording...")
+                recordingState.value = RecordingState.PAUSED
+            }
+            RecordingState.PLAYBACK -> {
+                recordingState.value = RecordingState.PAUSED
+                audioTrack?.pause()
+                audioTrack?.flush()
+                println("PLAYBACK: Paused at ${pausedPlaybackPosition}ms")
+            }
+            else -> {
+                println("ENGINE: Not recording, ignoring pause request")
+            }
         }
     }
 
     fun playBackCurrentStream() {
         if (recordingState.value == RecordingState.RECORDING) {
             println("PLAYBACK: Recording is active, pausing recording...")
-            pauseRecording()
+            pause()
         }
 
         if (recordingState.value != RecordingState.PAUSED) {
@@ -317,7 +315,7 @@ class RecorderEngine {
         return amplitudes
     }
 
-    fun stopAndFinalize(onSave: (ByteArray) -> Unit) {
+    fun finalize(onSave: (ByteArray) -> Unit) {
         recordingState.value = RecordingState.IDLE
 
         // Cleanup playback if running
