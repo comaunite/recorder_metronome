@@ -7,6 +7,9 @@ import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
 import androidx.annotation.RequiresPermission
+import com.recordermetronome.data.PlaybackPosition
+import com.recordermetronome.data.WaveformData
+import com.recordermetronome.data.WaveformUpdate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,9 +41,13 @@ class RecorderEngine {
 
     private val waveformResolutionInMs = 50L // Update every ~50ms
     private var lastWaveformProcessedBytes = 0L // Track the last processed point
+
     private val waveformData = MutableStateFlow(WaveformData())
     val waveformDataStateFlow: StateFlow<WaveformData> = waveformData.asStateFlow()
-
+    private val waveformUpdate = MutableStateFlow(WaveformUpdate())
+    val waveformUpdateStateFlow: StateFlow<WaveformUpdate> = waveformUpdate.asStateFlow()
+    private val playbackPosition = MutableStateFlow(PlaybackPosition())
+    val playbackPositionStateFlow: StateFlow<PlaybackPosition> = playbackPosition.asStateFlow()
 
     private val timestamp = MutableStateFlow(0L)
     val timestampStateFlow = timestamp.asStateFlow()
@@ -58,6 +65,8 @@ class RecorderEngine {
             amplitudeList.clear()
             lastWaveformProcessedBytes = 0L
             totalProcessedBytes = 0L
+            waveformUpdate.value = WaveformUpdate()
+            waveformData.value = WaveformData()
         }
 
         pausedPlaybackPosition = 0L
@@ -160,7 +169,9 @@ class RecorderEngine {
             ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
                 .coerceIn(0, amplitudes.size - 1)
 
-        waveformData.value = WaveformData(amplitudes, maxAmplitude, currentPosition = startPositionIndex)
+        // Emit complete waveform data ONCE at the start of playback
+        waveformData.value =
+            WaveformData(amplitudes, maxAmplitude, currentPosition = startPositionIndex)
 
         recordingState.value = RecordingState.PLAYBACK
 
@@ -214,18 +225,12 @@ class RecorderEngine {
 
                         timestamp.value = pausedPlaybackPosition
 
-                        // Update waveform position based on the current playback position
+                        // Emit ONLY the current position index, not the entire waveform
                         val currentPosIndex =
                             ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
                                 .coerceIn(0, amplitudes.size - 1)
 
-                        // TODO: Same as below, try to emit only the current position,
-                        //  instead of re-emitting the whole list just to update position
-                        waveformData.value = WaveformData(
-                            amplitudes,
-                            maxAmplitude,
-                            currentPosition = currentPosIndex
-                        )
+                        playbackPosition.value = PlaybackPosition(currentIndex = currentPosIndex)
 
                         if (elapsed >= durationMs) {
                             println("PLAYBACK: Reached end of audio")
@@ -263,8 +268,7 @@ class RecorderEngine {
     }
 
 
-    // TODO: Look into emitting only newly added values to amplitudes,
-    //  and let ViewData accumulate those into complete waveform
+    // Emit only newly added amplitude values during recording
     private fun updateWaveform() {
         // Extract amplitude from NEW data only (since last update)
         val allData = recordedData.toByteArray()
@@ -279,13 +283,13 @@ class RecorderEngine {
             amplitudeList.addAll(newAmplitudes)
 
             lastWaveformProcessedBytes = allData.size.toLong()
-        }
 
-        waveformData.value = WaveformData(
-            amplitudeList.toList(),
-            maxAmplitude,
-            currentPosition = amplitudeList.size - 1
-        )
+            // Emit only the NEW amplitudes to minimize data transfer
+            waveformUpdate.value = WaveformUpdate(
+                newAmplitudes = newAmplitudes,
+                maxAmplitude = maxAmplitude
+            )
+        }
     }
 
     private fun extractAmplitudes(audioBytes: ByteArray, sampleCount: Int = 128): List<Float> {

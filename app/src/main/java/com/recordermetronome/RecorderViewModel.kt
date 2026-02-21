@@ -8,8 +8,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.recordermetronome.data.WaveformData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class RecorderViewModel : ViewModel() {
     private val engine = RecorderEngine()
@@ -22,8 +25,60 @@ class RecorderViewModel : ViewModel() {
     private val _showSaveDialog = MutableStateFlow(false)
     val showSaveDialog = _showSaveDialog.asStateFlow()
 
-    val waveformData = engine.waveformDataStateFlow
+    // Accumulated waveform data for the UI
+    private val _accumulatedWaveformData = MutableStateFlow(WaveformData())
+    val accumulatedWaveformData = _accumulatedWaveformData.asStateFlow()
+
     val timestamp = engine.timestampStateFlow
+
+    init {
+        // Listen to incremental waveform updates during recording
+        viewModelScope.launch {
+            engine.waveformUpdateStateFlow.collect { update ->
+                if (update.newAmplitudes.isNotEmpty()) {
+                    val current = _accumulatedWaveformData.value
+                    val updatedAmplitudes = current.amplitudes + update.newAmplitudes
+                    _accumulatedWaveformData.value = WaveformData(
+                        amplitudes = updatedAmplitudes,
+                        maxAmplitude = update.maxAmplitude,
+                        currentPosition = updatedAmplitudes.size - 1
+                    )
+                }
+            }
+        }
+
+        // Listen to full waveform updates (at playback start)
+        viewModelScope.launch {
+            engine.waveformDataStateFlow.collect { waveformData ->
+                // Full waveform update (e.g., at playback start or reset)
+                if (waveformData.amplitudes.isNotEmpty()) {
+                    _accumulatedWaveformData.value = waveformData
+                }
+            }
+        }
+
+        // Listen to playback position updates
+        viewModelScope.launch {
+            engine.playbackPositionStateFlow.collect { position ->
+                if (recordingStateFlow.value == RecordingState.PLAYBACK) {
+                    // Update only the position in the accumulated waveform
+                    val current = _accumulatedWaveformData.value
+                    _accumulatedWaveformData.value = current.copy(
+                        currentPosition = position.currentIndex
+                    )
+                }
+            }
+        }
+
+        // Clear accumulated waveform when returning to IDLE
+        viewModelScope.launch {
+            recordingStateFlow.collect { state ->
+                if (state == RecordingState.IDLE) {
+                    _accumulatedWaveformData.value = WaveformData()
+                }
+            }
+        }
+    }
 
     @SuppressLint("DefaultLocale")
     fun formatMillisToTimestamp(millis: Long): String {
@@ -57,7 +112,7 @@ class RecorderViewModel : ViewModel() {
 
     fun onDiscardData() {
         _showSaveDialog.value = false
-        TODO("Not yet implemented")
+        pendingAudioData = null
     }
 
     fun onSaveData(context: Context, string: String) {

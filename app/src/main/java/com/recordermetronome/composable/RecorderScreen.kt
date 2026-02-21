@@ -40,7 +40,7 @@ fun RecorderScreen(
 ) {
     val context = LocalContext.current
     val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
-    val waveformData by viewModel.waveformData.collectAsStateWithLifecycle()
+    val waveformData by viewModel.accumulatedWaveformData.collectAsStateWithLifecycle()
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
     val formattedTimestamp = remember(timestamp) { viewModel.formatMillisToTimestamp(timestamp) }
 

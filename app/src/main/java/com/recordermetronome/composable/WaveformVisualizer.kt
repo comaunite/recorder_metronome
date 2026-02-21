@@ -10,7 +10,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.recordermetronome.WaveformData
+import com.recordermetronome.data.WaveformData
 import kotlin.math.abs
 
 @Composable
@@ -36,7 +36,7 @@ fun WaveformVisualizer(
         val centerX = width / 2f + 2 // Fixed red line position
 
         if (amplitudes.isEmpty()) {
-            // Draw center line when empty
+            // Draw the center line when empty
             drawLine(
                 color = waveColor.copy(alpha = 0.2f),
                 start = Offset(0f, centerY),
@@ -59,7 +59,7 @@ fun WaveformVisualizer(
         val barSpacing = 1.dp.toPx() // Fixed spacing
         val barFullWidth = barWidth + barSpacing
 
-        // Draw center line
+        // Draw the center line
         drawLine(
             color = waveColor.copy(alpha = 0.2f),
             start = Offset(0f, centerY),
