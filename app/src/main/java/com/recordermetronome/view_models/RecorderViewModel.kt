@@ -14,9 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class RecorderViewModel : ViewModel() {
     private val engine = RecorderEngine()
@@ -114,40 +111,17 @@ class RecorderViewModel : ViewModel() {
         _showSaveDialog.value = true
     }
 
-    fun onStopDialogCancel() {
-        _showSaveDialog.value = false
-    }
-
     fun onStopDialogSave(context: Context, fileName: String, callback: () -> Unit) {
         _showSaveDialog.value = false
 
         engine.finalize { audioData ->
-            saveToDisk(context, fileName, audioData)
+            RecordingFileUtil.saveToDisk(context, fileName, audioData)
             callback()
         }
     }
 
-    private fun saveToDisk(context: Context, fileName: String, audioData: ByteArray) {
-        if (audioData.isNotEmpty()) {
-            try {
-                // Create recordings directory
-                val recordingsDir = File(context.getExternalFilesDir(null), "recordings")
-                if (!recordingsDir.exists()) {
-                    recordingsDir.mkdirs()
-                }
-
-                // Create file with .wav extension
-                val outputFile = File(recordingsDir, "$fileName.wav")
-
-                // Write audio data to file
-                outputFile.writeBytes(audioData)
-
-                println("Recording saved: ${outputFile.absolutePath}")
-            } catch (e: Exception) {
-                println("Error saving recording: ${e.message}")
-                e.printStackTrace()
-            }
-        }
+    fun onStopDialogCancel() {
+        _showSaveDialog.value = false
     }
 
     fun onBackPressed() {
@@ -159,7 +133,7 @@ class RecorderViewModel : ViewModel() {
         _showBackDialog.value = false
         val fileName = RecordingFileUtil.generateDefaultFileName()
         engine.finalize { audioData ->
-            saveToDisk(context, fileName, audioData)
+            RecordingFileUtil.saveToDisk(context, fileName, audioData)
         }
         callback()
     }

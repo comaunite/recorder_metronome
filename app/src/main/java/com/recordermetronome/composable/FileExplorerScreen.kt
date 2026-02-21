@@ -1,6 +1,7 @@
 package com.recordermetronome.composable
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,7 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -24,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,8 +38,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.content.Intent
 import com.recordermetronome.composable.components.RecordButton
+import com.recordermetronome.composable.dialogs.DeleteRecordingDialog
+import com.recordermetronome.composable.dialogs.RenameRecordingDialog
 import com.recordermetronome.data.RecordingFile
 import com.recordermetronome.util.RecordingFileUtil
 import com.recordermetronome.view_models.FileExplorerViewModel
@@ -116,7 +116,7 @@ fun FileExplorerScreen(
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp)
                 ) {
                     items(recordings) { recording ->
-                        RecordingFileItem(recording, fileExplorerViewModel)
+                        RecordingFileItem(recording, recordings, fileExplorerViewModel)
                     }
                 }
             }
@@ -135,30 +135,40 @@ fun FileExplorerScreen(
 }
 
 @Composable
-fun RecordingFileItem(recording: RecordingFile, fileExplorerViewModel: FileExplorerViewModel = remember { FileExplorerViewModel() }) {
+fun RecordingFileItem(
+    recording: RecordingFile,
+    recordings: List<RecordingFile>,
+    fileExplorerViewModel: FileExplorerViewModel = remember { FileExplorerViewModel() }
+) {
     val context = LocalContext.current
     var menuExpanded by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var renameText by remember { mutableStateOf(recording.name) }
 
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Recording") },
-            text = { Text("Are you sure you want to delete \"${recording.name}\"?") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        fileExplorerViewModel.deleteRecording(context, recording)
-                        showDeleteDialog = false
-                    }
-                ) {
-                    Text("Delete")
-                }
+        DeleteRecordingDialog(
+            recordingName = recording.name,
+            onDelete = {
+                fileExplorerViewModel.deleteRecording(context, recording)
+                showDeleteDialog = false
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
+            onCancel = { showDeleteDialog = false }
+        )
+    }
+
+    if (showRenameDialog) {
+        RenameRecordingDialog(
+            currentRecording = recording,
+            existingRecordings = recordings,
+            renameText = renameText,
+            onRename = { newName ->
+                fileExplorerViewModel.renameRecording(context, recording, newName)
+                showRenameDialog = false
+            },
+            onRenameTextChange = { renameText = it },
+            onCancel = {
+                showRenameDialog = false
             }
         )
     }
@@ -200,6 +210,14 @@ fun RecordingFileItem(recording: RecordingFile, fileExplorerViewModel: FileExplo
                     onDismissRequest = { menuExpanded = false }
                 ) {
                     DropdownMenuItem(
+                        text = { Text("Rename") },
+                        onClick = {
+                            menuExpanded = false
+                            renameText = recording.name
+                            showRenameDialog = true
+                        }
+                    )
+                    DropdownMenuItem(
                         text = { Text("Delete") },
                         onClick = {
                             menuExpanded = false
@@ -221,7 +239,7 @@ fun RecordingFileItem(recording: RecordingFile, fileExplorerViewModel: FileExplo
         Text(
             text = RecordingFileUtil.formatTimestamp(recording.createdTime),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             modifier = Modifier.padding(top = 4.dp)
         )
     }

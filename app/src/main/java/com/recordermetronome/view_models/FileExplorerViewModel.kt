@@ -8,7 +8,6 @@ import com.recordermetronome.util.RecordingFileUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.File
 
 class FileExplorerViewModel : ViewModel() {
     // Recordings list
@@ -24,16 +23,17 @@ class FileExplorerViewModel : ViewModel() {
 
     fun deleteRecording(context: Context, recording: RecordingFile) {
         viewModelScope.launch {
-            try {
-                val file = java.io.File(recording.filePath)
-                if (file.exists()) {
-                    file.delete()
-                }
-                // Reload recordings after deletion
-                loadRecordings(context)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            RecordingFileUtil.deleteRecording(recording)
+            // Reload recordings after deletion
+            loadRecordings(context)
+        }
+    }
+
+    fun renameRecording(context: Context, recording: RecordingFile, newName: String) {
+        viewModelScope.launch {
+            RecordingFileUtil.renameRecording(recording, newName)
+            // Reload recordings after rename
+            loadRecordings(context)
         }
     }
 }

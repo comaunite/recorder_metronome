@@ -133,5 +133,62 @@ object RecordingFileUtil {
         val dateFormat = SimpleDateFormat("ddMMyyyy_HHmmss", Locale.US)
         return "Recording ${dateFormat.format(Date())}"
     }
+
+    /**
+     * Save audio data to disk in the recordings directory
+     */
+    fun saveToDisk(context: Context, fileName: String, audioData: ByteArray) {
+        if (audioData.isNotEmpty()) {
+            try {
+                // Create recordings directory
+                val recordingsDir = getRecordingsDirectory(context)
+
+                // Create file with .wav extension
+                val outputFile = File(recordingsDir, "$fileName.wav")
+
+                // Write audio data to file
+                outputFile.writeBytes(audioData)
+
+                println("Recording saved: ${outputFile.absolutePath}")
+            } catch (e: Exception) {
+                println("Error saving recording: ${e.message}")
+                e.printStackTrace()
+            }
+        }
+    }
+
+    /**
+     * Delete a recording file
+     */
+    fun deleteRecording(recording: RecordingFile) {
+        try {
+            val file = File(recording.filePath)
+            if (file.exists()) {
+                file.delete()
+            }
+        } catch (e: Exception) {
+            println("Error deleting recording: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * Rename a recording file
+     */
+    fun renameRecording(recording: RecordingFile, newName: String) {
+        try {
+            val oldFile = File(recording.filePath)
+            if (oldFile.exists()) {
+                val newFile = File(oldFile.parentFile, "$newName.wav")
+                if (newFile.exists()) {
+                    throw Exception("File with the same name already exists")
+                }
+                oldFile.renameTo(newFile)
+            }
+        } catch (e: Exception) {
+            println("Error renaming recording: ${e.message}")
+            e.printStackTrace()
+        }
+    }
 }
 
