@@ -25,6 +25,9 @@ class RecorderViewModel : ViewModel() {
     private val _generatedFileName = MutableStateFlow("")
     val generatedFileName = _generatedFileName.asStateFlow()
 
+    private val _showBackDialog = MutableStateFlow(false)
+    val showBackDialog = _showBackDialog.asStateFlow()
+
     // Accumulated waveform data for the UI
     private val _accumulatedWaveformData = MutableStateFlow(WaveformData())
     val accumulatedWaveformData = _accumulatedWaveformData.asStateFlow()
@@ -146,5 +149,31 @@ class RecorderViewModel : ViewModel() {
                 e.printStackTrace()
             }
         }
+    }
+
+    fun onBackPressed() {
+        engine.pause()
+        _showBackDialog.value = true
+    }
+
+    fun onBackSave(context: Context, onExitApp: () -> Unit) {
+        _showBackDialog.value = false
+        val fileName = generateDefaultFileName()
+        engine.finalize { audioData ->
+            saveToDisk(context, fileName, audioData)
+        }
+        // Exit the app after saving
+        onExitApp()
+    }
+
+    fun onBackDiscard(onExitApp: () -> Unit) {
+        _showBackDialog.value = false
+        engine.finalize { }
+        // Exit the app after discarding
+        onExitApp()
+    }
+
+    fun onBackCancel() {
+        _showBackDialog.value = false
     }
 }

@@ -2,6 +2,7 @@ package com.recordermetronome.composable
 
 import android.Manifest
 import android.content.pm.PackageManager
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -11,17 +12,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.Canvas
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,6 +26,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordermetronome.RecorderViewModel
 import com.recordermetronome.RecordingState
+import com.recordermetronome.composable.dialogs.ExitRecordingDialog
+import com.recordermetronome.composable.dialogs.StopRecordingDialog
 
 @Composable
 fun RecorderScreen(
@@ -63,6 +59,24 @@ fun RecorderScreen(
         } else {
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             permissionLauncher.launch(Manifest.permission.MODIFY_AUDIO_SETTINGS)
+        }
+    }
+
+    // Register back button dispatcher event handler
+    val activity = LocalContext.current as? ComponentActivity
+    if (activity != null) {
+        DisposableEffect(Unit) {
+            val callback = object : androidx.activity.OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    viewModel.onBackPressed()
+                    // Event was handled, stop propagation
+                    return
+                }
+            }
+            activity.onBackPressedDispatcher.addCallback(callback)
+            onDispose {
+                callback.remove()
+            }
         }
     }
 
@@ -135,12 +149,30 @@ fun RecorderScreen(
         val generatedFileName by viewModel.generatedFileName.collectAsStateWithLifecycle()
 
         if (showSaveDialog) {
-            SaveRecordingDialog(
+            StopRecordingDialog(
                 onSave = { fileName ->
                     viewModel.onSaveData(context, fileName)
                 },
                 onCancel = { viewModel.onCancelSave() },
                 preGeneratedName = generatedFileName
+            )
+        }
+
+        val showBackDialog by viewModel.showBackDialog.collectAsStateWithLifecycle()
+
+        if (showBackDialog && activity != null) {
+            ExitRecordingDialog(
+                onSave = {
+                    viewModel.onBackSave(context) {
+                        activity.finish()
+                    }
+                },
+                onDiscard = {
+                    viewModel.onBackDiscard {
+                        activity.finish()
+                    }
+                },
+                onCancel = { viewModel.onBackCancel() }
             )
         }
     }
