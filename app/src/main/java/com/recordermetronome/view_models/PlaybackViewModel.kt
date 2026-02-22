@@ -30,7 +30,11 @@ class PlaybackViewModel : ViewModel() {
         preLoadedRecordings: List<RecordingFile>?
     ) {
         _currentRecording.value = recording
+
+        // Load audio file directly (it's a synchronous operation)
+        println("PLAYBACK_VM: Initializing with recording: ${recording.name} at ${recording.filePath}")
         engine.loadAudioFile(recording.filePath)
+        println("PLAYBACK_VM: Audio file loading completed")
 
         if (preLoadedRecordings != null) {
             _existingRecordings.value = preLoadedRecordings
@@ -66,8 +70,7 @@ class PlaybackViewModel : ViewModel() {
     fun onPausePlaybackTapped() = engine.pause()
 
     fun onStopTapped() {
-        engine.pause()
-        engine.finalize { }
+        // TODO: Reset current position to 0 and stop playback, enter IDLE state
     }
 
     override fun onCleared() {

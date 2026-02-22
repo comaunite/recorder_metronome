@@ -73,17 +73,28 @@ object RecordingFileUtil {
                 val channels = buffer.getShort(22).toInt()
                 val bitsPerSample = buffer.getShort(34).toInt()
 
-                // Validate parsed values
-                if (sampleRate <= 0 || channels <= 0 || bitsPerSample <= 0) {
-                    return 0L
-                }
+                // Check if header is valid
+                if (sampleRate > 0 && channels > 0 && bitsPerSample > 0) {
+                    // Valid WAV header found
+                    val dataSize = file.length() - 44
+                    val bytesPerSecond = sampleRate * channels * (bitsPerSample / 8)
 
-                val dataSize = file.length() - 44
-                val bytesPerSecond = sampleRate * channels * (bitsPerSample / 8)
+                    if (bytesPerSecond > 0) {
+                        val durationSeconds = dataSize / bytesPerSecond
+                        durationInMs = durationSeconds * 1000
+                    }
+                } else {
+                    // Invalid header, assume entire file is raw PCM data (44100 Hz, 1 channel, 16-bit)
+                    val assumedSampleRate = 44100
+                    val assumedChannels = 1
+                    val assumedBitsPerSample = 16
+                    val dataSize = file.length()
+                    val bytesPerSecond = assumedSampleRate * assumedChannels * (assumedBitsPerSample / 8)
 
-                if (bytesPerSecond > 0) {
-                    val durationSeconds = dataSize / bytesPerSecond
-                    durationInMs = durationSeconds * 1000
+                    if (bytesPerSecond > 0) {
+                        val durationSeconds = dataSize / bytesPerSecond
+                        durationInMs = durationSeconds * 1000
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -113,14 +124,58 @@ object RecordingFileUtil {
                 // Create file with .wav extension
                 val outputFile = File(recordingsDir, "$fileName.wav")
 
-                // Write audio data to file
-                outputFile.writeBytes(audioData)
+                // Write WAV file with proper header
+                writeWavFile(outputFile, audioData)
 
                 println("Recording saved: ${outputFile.absolutePath}")
             } catch (e: Exception) {
                 println("Error saving recording: ${e.message}")
                 e.printStackTrace()
             }
+        }
+    }
+
+    /**
+     * Write audio data as a proper WAV file with header
+     */
+    private fun writeWavFile(file: File, audioData: ByteArray) {
+        val sampleRate = 44100
+        val channels = 1 // Mono
+        val bitsPerSample = 16
+
+        val byteRate = sampleRate * channels * (bitsPerSample / 8)
+        val blockAlign = channels * (bitsPerSample / 8)
+        val dataSize = audioData.size
+
+        file.outputStream().use { output ->
+            // Write WAV header
+            val header = ByteArray(44)
+            val buffer = ByteBuffer.wrap(header)
+            buffer.order(ByteOrder.LITTLE_ENDIAN)
+
+            // RIFF header
+            buffer.put("RIFF".toByteArray()) // Position 0-3
+            buffer.putInt(36 + dataSize) // File size - 8 (position 4-7)
+            buffer.put("WAVE".toByteArray()) // Position 8-11
+
+            // fmt sub-chunk
+            buffer.put("fmt ".toByteArray()) // Position 12-15
+            buffer.putInt(16) // Sub-chunk size (position 16-19)
+            buffer.putShort(1) // Audio format: PCM (position 20-21)
+            buffer.putShort(channels.toShort()) // Number of channels (position 22-23)
+            buffer.putInt(sampleRate) // Sample rate (position 24-27)
+            buffer.putInt(byteRate) // Byte rate (position 28-31)
+            buffer.putShort(blockAlign.toShort()) // Block align (position 32-33)
+            buffer.putShort(bitsPerSample.toShort()) // Bits per sample (position 34-35)
+
+            // data sub-chunk
+            buffer.put("data".toByteArray()) // Position 36-39
+            buffer.putInt(dataSize) // Position 40-43
+
+            // Write header
+            output.write(header)
+            // Write audio data
+            output.write(audioData)
         }
     }
 

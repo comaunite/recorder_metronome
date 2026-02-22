@@ -367,29 +367,45 @@ class RecorderEngine {
             }
 
             val audioBytes = file.readBytes()
-            if (audioBytes.size <= 44) {
-                println("LOAD ERROR: File is too small to be a valid WAV file")
+            if (audioBytes.isEmpty()) {
+                println("LOAD ERROR: File is empty")
                 return
             }
 
-            // Parse WAV header to get sample rate
-            val buffer = ByteBuffer.wrap(audioBytes)
-            buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            var audioData: ByteArray = ByteArray(0)
+            var parsedSampleRate = sampleRate
+            var parsedChannels = 1
+            var parsedBitsPerSample = 16
+            var hasValidHeader = false
 
-            val sampleRate = buffer.getInt(24)
-            val channels = buffer.getShort(22).toInt()
-            val bitsPerSample = buffer.getShort(34).toInt()
+            // Try to parse WAV header
+            if (audioBytes.size > 44) {
+                val buffer = ByteBuffer.wrap(audioBytes)
+                buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
 
-            if (sampleRate <= 0 || channels <= 0 || bitsPerSample <= 0) {
-                println("LOAD ERROR: Invalid WAV header")
-                return
+                val sampleRate = buffer.getInt(24)
+                val channels = buffer.getShort(22).toInt()
+                val bitsPerSample = buffer.getShort(34).toInt()
+
+                if (sampleRate > 0 && channels > 0 && bitsPerSample > 0) {
+                    // Valid header found
+                    audioData = audioBytes.copyOfRange(44, audioBytes.size)
+                    parsedSampleRate = sampleRate
+                    parsedChannels = channels
+                    parsedBitsPerSample = bitsPerSample
+                    hasValidHeader = true
+                    println("LOAD: Found valid WAV header - SR:$sampleRate CH:$channels BPS:$bitsPerSample")
+                }
             }
 
-            // Extract audio data (skip 44-byte header)
-            val audioData = audioBytes.copyOfRange(44, audioBytes.size)
+            // If no valid header found, treat entire file as raw PCM data
+            if (!hasValidHeader) {
+                println("LOAD: No valid WAV header found, treating entire file as raw PCM data")
+                audioData = audioBytes
+            }
 
             // Extract amplitudes
-            val durationSeconds = (audioData.size / (sampleRate * channels * (bitsPerSample / 8))).toFloat()
+            val durationSeconds = (audioData.size / (parsedSampleRate * parsedChannels * (parsedBitsPerSample / 8))).toFloat()
             val targetBarCount = (durationSeconds * 3).toInt().coerceAtLeast(1)
             val amplitudes = extractAmplitudes(audioData, sampleCount = targetBarCount)
 
