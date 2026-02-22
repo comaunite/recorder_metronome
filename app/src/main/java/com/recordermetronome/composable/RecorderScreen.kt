@@ -60,7 +60,7 @@ fun RecorderScreen(
     val formattedTimestamp = remember(timestamp) { viewModel.formatMillisToTimestamp(timestamp) }
 
     // Use pre-loaded recordings if available, otherwise load only when needed
-    var existingRecordings by remember { mutableStateOf(preLoadedRecordings ?: emptyList<com.recordermetronome.data.RecordingFile>()) }
+    var existingRecordings by remember { mutableStateOf(preLoadedRecordings ?: emptyList()) }
 
     // Only load from disk if recordings weren't pre-loaded
     var shouldLoadRecordings by remember { mutableStateOf(preLoadedRecordings == null) }

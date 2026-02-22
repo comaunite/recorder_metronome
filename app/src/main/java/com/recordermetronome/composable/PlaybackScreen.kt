@@ -1,6 +1,5 @@
 package com.recordermetronome.composable
 
-import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -31,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordermetronome.composable.components.PausePlaybackButton
 import com.recordermetronome.composable.components.PlayButton
@@ -45,7 +42,6 @@ import com.recordermetronome.util.RecordingFileUtil
 import com.recordermetronome.util.RecordingState
 import com.recordermetronome.view_models.FileExplorerViewModel
 import com.recordermetronome.view_models.PlaybackViewModel
-import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,7 +51,7 @@ fun PlaybackScreen(
     fileExplorerViewModel: FileExplorerViewModel,
     recordingFile: RecordingFile,
     onNavigateBack: () -> Unit = {},
-    preLoadedRecordings: List<com.recordermetronome.data.RecordingFile>? = null
+    preLoadedRecordings: List<RecordingFile>? = null
 ) {
     val context = LocalContext.current
     val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
@@ -65,7 +61,7 @@ fun PlaybackScreen(
     val formattedDuration = remember(recordingFile.durationMs) { RecordingFileUtil.formatDuration(recordingFile.durationMs) }
 
     // Use pre-loaded recordings if available, otherwise load only when needed
-    var existingRecordings by remember { mutableStateOf(preLoadedRecordings ?: emptyList<com.recordermetronome.data.RecordingFile>()) }
+    var existingRecordings by remember { mutableStateOf(preLoadedRecordings ?: emptyList()) }
 
     // Only load from disk if recordings weren't pre-loaded
     var shouldLoadRecordings by remember { mutableStateOf(preLoadedRecordings == null) }
@@ -160,7 +156,7 @@ fun PlaybackScreen(
                             text = { Text("Share") },
                             onClick = {
                                 menuExpanded = false
-                                shareRecording(context, recordingFile)
+                                RecordingFileUtil.shareRecording(context, recordingFile)
                             }
                         )
                     }
@@ -240,18 +236,3 @@ fun PlaybackScreen(
         }
     }
 }
-
-private fun shareRecording(context: android.content.Context, recording: RecordingFile) {
-    val file = File(recording.filePath)
-    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-
-    val shareIntent = Intent().apply {
-        action = Intent.ACTION_SEND
-        putExtra(Intent.EXTRA_STREAM, uri)
-        type = "audio/wav"
-    }
-
-    context.startActivity(Intent.createChooser(shareIntent, "Share Recording"))
-}
-
-
