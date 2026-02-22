@@ -39,7 +39,8 @@ object RecordingFileUtil {
                             name = file.nameWithoutExtension,
                             filePath = file.absolutePath,
                             durationMs = durationInMs,
-                            createdTime = createdTime
+                            createdTime = createdTime,
+                            sizeKb = file.length() / 1024
                         )
                     )
                 } catch (e: Exception) {
@@ -170,6 +171,15 @@ object RecordingFileUtil {
         } catch (e: Exception) {
             println("Error renaming recording: ${e.message}")
             e.printStackTrace()
+        }
+    }
+
+
+    fun formatFileSize(sizeKb: Long): String {
+        return if (sizeKb > 1024) {
+            String.format(Locale.US, "%.2f MB", sizeKb / 1024f)
+        } else {
+            String.format(Locale.US, "%d KB", sizeKb)
         }
     }
 }

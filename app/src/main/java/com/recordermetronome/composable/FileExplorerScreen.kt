@@ -172,75 +172,96 @@ fun RecordingFileItem(
         )
     }
 
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        // File info column (takes available space)
+        Column(
+            modifier = Modifier
+                .weight(1f)
         ) {
-            // Name on the left
-            Text(
-                text = recording.name,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Name on the left
+                Text(
+                    text = recording.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
 
-            // Duration in the middle
-            Text(
-                text = RecordingFileUtil.formatDuration(recording.durationMs),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(start = 8.dp)
-            )
+                // Duration in the middle
+                Text(
+                    text = RecordingFileUtil.formatDuration(recording.durationMs),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
 
-            // Three-dot menu on the right
-            Box {
-                IconButton(onClick = { menuExpanded = true }) {
-                    Icon(
-                        imageVector = Icons.Filled.MoreVert,
-                        contentDescription = "More options"
-                    )
-                }
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Rename") },
-                        onClick = {
-                            menuExpanded = false
-                            renameText = recording.name
-                            showRenameDialog = true
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Delete") },
-                        onClick = {
-                            menuExpanded = false
-                            showDeleteDialog = true
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Share") },
-                        onClick = {
-                            menuExpanded = false
-                            shareRecording(context, recording)
-                        }
-                    )
-                }
+            // Date and time on left, File size on right
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = RecordingFileUtil.formatTimestamp(recording.createdTime),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+
+                Text(
+                    text = RecordingFileUtil.formatFileSize(recording.sizeKb),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
             }
         }
 
-        // Date and time on second row
-        Text(
-            text = RecordingFileUtil.formatTimestamp(recording.createdTime),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            modifier = Modifier.padding(top = 4.dp)
-        )
+        // Three-dot menu on the right with 2-row row span
+        Box {
+            IconButton(onClick = { menuExpanded = true }) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = "More options"
+                )
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Rename") },
+                    onClick = {
+                        menuExpanded = false
+                        renameText = recording.name
+                        showRenameDialog = true
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Delete") },
+                    onClick = {
+                        menuExpanded = false
+                        showDeleteDialog = true
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Share") },
+                    onClick = {
+                        menuExpanded = false
+                        shareRecording(context, recording)
+                    }
+                )
+            }
+        }
     }
 }
 
