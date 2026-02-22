@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
                             RecorderScreen(
                                 modifier = Modifier.padding(innerPadding),
                                 viewModel = recorderViewModel,
-                                onNavigateToFileExplorer = {
+                                onNavigateBack = {
                                     currentScreen.value = Screen.FileExplorer
                                 },
                                 preLoadedRecordings = preLoadedRecordings

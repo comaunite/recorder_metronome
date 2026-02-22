@@ -1,5 +1,6 @@
 package com.recordermetronome.composable
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -73,6 +75,24 @@ fun PlaybackScreen(
         if (shouldLoadRecordings) {
             existingRecordings = RecordingFileUtil.getRecordingFiles(context)
             shouldLoadRecordings = false
+        }
+    }
+
+    // Register back button dispatcher event handler
+    val activity = LocalContext.current as? ComponentActivity
+    if (activity != null) {
+        DisposableEffect(Unit) {
+            val callback = object : androidx.activity.OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    onNavigateBack()
+                    // Event was handled, stop propagation
+                    return
+                }
+            }
+            activity.onBackPressedDispatcher.addCallback(callback)
+            onDispose {
+                callback.remove()
+            }
         }
     }
 

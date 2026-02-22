@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,7 +51,7 @@ import com.recordermetronome.view_models.RecorderViewModel
 fun RecorderScreen(
     modifier: Modifier = Modifier,
     viewModel: RecorderViewModel,
-    onNavigateToFileExplorer: () -> Unit = {},
+    onNavigateBack: () -> Unit = {},
     preLoadedRecordings: List<com.recordermetronome.data.RecordingFile>? = null
 ) {
     val context = LocalContext.current
@@ -203,7 +202,7 @@ fun RecorderScreen(
             if (showSaveDialog) {
                 StopRecordingDialog(
                     onSave = { fileName ->
-                        viewModel.onStopDialogSave(context, fileName, onNavigateToFileExplorer)
+                        viewModel.onStopDialogSave(context, fileName, onNavigateBack)
                     },
                     onCancel = { viewModel.onStopDialogCancel() },
                     preGeneratedName = generatedFileName,
@@ -217,12 +216,12 @@ fun RecorderScreen(
                 ExitRecordingDialog(
                     onSave = {
                         viewModel.onBackDialogSave(context) {
-                            onNavigateToFileExplorer()
+                            onNavigateBack()
                         }
                     },
                     onDiscard = {
                         viewModel.onBackDialogDiscard {
-                            onNavigateToFileExplorer()
+                            onNavigateBack()
                         }
                     },
                     onCancel = { viewModel.onBackDialogCancel() }
