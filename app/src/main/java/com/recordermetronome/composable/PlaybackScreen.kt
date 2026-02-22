@@ -1,6 +1,6 @@
 package com.recordermetronome.composable
 
-import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,59 +58,30 @@ fun PlaybackScreen(
     val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
     val waveformData by viewModel.accumulatedWaveformData.collectAsStateWithLifecycle()
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
+    val currentRecording by viewModel.currentRecording.collectAsStateWithLifecycle()
+    val existingRecordings by viewModel.existingRecordings.collectAsStateWithLifecycle()
 
-    // Track current recording file locally to handle renames
-    var currentRecording by remember { mutableStateOf(recordingFile) }
+    val activeRecording = currentRecording ?: recordingFile
     val formattedTimestamp = remember(timestamp) { FormattingHelper.formatDurationWithMs(timestamp) }
-    val formattedDuration = remember(currentRecording.durationMs) { FormattingHelper.formatDuration(currentRecording.durationMs) }
+    val formattedDuration = remember(activeRecording.durationMs) { FormattingHelper.formatDuration(activeRecording.durationMs) }
 
-    // Use pre-loaded recordings if available, otherwise load only when needed
-    var existingRecordings by remember { mutableStateOf(preLoadedRecordings ?: emptyList()) }
-
-    // Only load from disk if recordings weren't pre-loaded
-    var shouldLoadRecordings by remember { mutableStateOf(preLoadedRecordings == null) }
-
-    LaunchedEffect(Unit) {
-        if (shouldLoadRecordings) {
-            existingRecordings = RecordingFileUtil.getRecordingFiles(context)
-            shouldLoadRecordings = false
-        }
-    }
-
-    // Register back button dispatcher event handler
-    val activity = LocalContext.current as? ComponentActivity
-    if (activity != null) {
-        DisposableEffect(Unit) {
-            val callback = object : androidx.activity.OnBackPressedCallback(true) {
-                override fun handleOnBackPressed() {
-                    onNavigateBack()
-                    // Event was handled, stop propagation
-                    return
-                }
-            }
-            activity.onBackPressedDispatcher.addCallback(callback)
-            onDispose {
-                callback.remove()
-            }
-        }
-    }
+    BackHandler { onNavigateBack() }
 
     var menuExpanded by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
-    var renameText by remember { mutableStateOf(currentRecording.name) }
+    var renameText by remember { mutableStateOf(activeRecording.name) }
 
     // Load the recording when screen is first displayed
-    LaunchedEffect(recordingFile) {
-        viewModel.loadRecording(recordingFile)
-        currentRecording = recordingFile
+    LaunchedEffect(recordingFile, preLoadedRecordings) {
+        viewModel.initialize(context, recordingFile, preLoadedRecordings)
     }
 
     if (showDeleteDialog) {
         DeleteRecordingDialog(
-            recordingName = currentRecording.name,
+            recordingName = activeRecording.name,
             onDelete = {
-                fileExplorerViewModel.deleteRecording(context, currentRecording)
+                fileExplorerViewModel.deleteRecording(context, activeRecording)
                 showDeleteDialog = false
                 onNavigateBack()
             },
@@ -121,13 +91,12 @@ fun PlaybackScreen(
 
     if (showRenameDialog) {
         RenameRecordingDialog(
-            currentRecording = currentRecording,
+            currentRecording = activeRecording,
             existingRecordings = existingRecordings,
             renameText = renameText,
             onRename = { newName ->
-                fileExplorerViewModel.renameRecording(context, currentRecording, newName)
-                // Update current recording with new name
-                currentRecording = currentRecording.copy(name = newName)
+                fileExplorerViewModel.renameRecording(context, activeRecording, newName)
+                viewModel.applyRename(activeRecording, newName)
                 renameText = newName
                 showRenameDialog = false
             },
@@ -168,7 +137,7 @@ fun PlaybackScreen(
                             text = { Text("Rename") },
                             onClick = {
                                 menuExpanded = false
-                                renameText = currentRecording.name
+                                renameText = activeRecording.name
                                 showRenameDialog = true
                             }
                         )
@@ -183,7 +152,7 @@ fun PlaybackScreen(
                             text = { Text("Share") },
                             onClick = {
                                 menuExpanded = false
-                                RecordingFileUtil.shareRecording(context, currentRecording)
+                                RecordingFileUtil.shareRecording(context, activeRecording)
                             }
                         )
                     }
@@ -200,7 +169,7 @@ fun PlaybackScreen(
         ) {
             // File name - now updates when renamed
             Text(
-                text = currentRecording.name,
+                text = activeRecording.name,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )

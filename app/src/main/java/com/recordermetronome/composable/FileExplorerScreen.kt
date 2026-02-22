@@ -1,9 +1,6 @@
 package com.recordermetronome.composable
 
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordermetronome.composable.components.RecordButton
 import com.recordermetronome.composable.dialogs.DeleteRecordingDialog
@@ -44,6 +40,7 @@ import com.recordermetronome.composable.dialogs.RenameRecordingDialog
 import com.recordermetronome.data.RecordingFile
 import com.recordermetronome.util.FormattingHelper
 import com.recordermetronome.util.RecordingFileUtil
+import com.recordermetronome.util.ensureRecordingAudioPermissions
 import com.recordermetronome.view_models.FileExplorerViewModel
 import com.recordermetronome.view_models.RecorderViewModel
 
@@ -59,28 +56,10 @@ fun FileExplorerScreen(
     val context = LocalContext.current
     val recordings by fileExplorerViewModel.recordings.collectAsStateWithLifecycle()
 
-    val permissionLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { granted ->
-            if (granted) {
-                recorderViewModel.onRecordTapped()
-                onStartRecording()
-            }
-        }
-
-    fun handleRecordAction() {
-        if (ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.RECORD_AUDIO
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            recorderViewModel.onRecordTapped()
-            onStartRecording()
-        } else {
-            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-            permissionLauncher.launch(Manifest.permission.MODIFY_AUDIO_SETTINGS)
-        }
+    val handleRecordAction = ensureRecordingAudioPermissions(context) {
+        @SuppressLint("MissingPermission")
+        recorderViewModel.onRecordTapped()
+        onStartRecording() // This should navigate us to the RecordingScreen
     }
 
     // Load recordings when screen is displayed
@@ -277,4 +256,3 @@ fun RecordingFileItem(
         }
     }
 }
-

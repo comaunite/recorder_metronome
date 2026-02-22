@@ -1,10 +1,7 @@
 package com.recordermetronome.composable
 
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import android.annotation.SuppressLint
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,7 +18,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordermetronome.util.RecordingState
 import com.recordermetronome.composable.components.PausePlaybackButton
@@ -44,6 +39,7 @@ import com.recordermetronome.composable.components.RecordButton
 import com.recordermetronome.composable.components.StopButton
 import com.recordermetronome.composable.components.WaveformVisualizer
 import com.recordermetronome.util.FormattingHelper
+import com.recordermetronome.util.ensureRecordingAudioPermissions
 import com.recordermetronome.view_models.RecorderViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,10 +56,7 @@ fun RecorderScreen(
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
     val formattedTimestamp = remember(timestamp) { FormattingHelper.formatDurationWithMs(timestamp) }
 
-    // Use pre-loaded recordings if available, otherwise load only when needed
     var existingRecordings by remember { mutableStateOf(preLoadedRecordings ?: emptyList()) }
-
-    // Only load from disk if recordings weren't pre-loaded
     var shouldLoadRecordings by remember { mutableStateOf(preLoadedRecordings == null) }
 
     LaunchedEffect(Unit) {
@@ -73,44 +66,11 @@ fun RecorderScreen(
         }
     }
 
-    val permissionLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { granted ->
-            if (granted) {
-                viewModel.onRecordTapped()
-            }
-        }
+    BackHandler { viewModel.onBackPressed() }
 
-    fun handleRecordAction() {
-        if (ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.RECORD_AUDIO
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            viewModel.onRecordTapped()
-        } else {
-            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-            permissionLauncher.launch(Manifest.permission.MODIFY_AUDIO_SETTINGS)
-        }
-    }
-
-    // Register back button dispatcher event handler
-    val activity = LocalContext.current as? ComponentActivity
-    if (activity != null) {
-        DisposableEffect(Unit) {
-            val callback = object : androidx.activity.OnBackPressedCallback(true) {
-                override fun handleOnBackPressed() {
-                    viewModel.onBackPressed()
-                    // Event was handled, stop propagation
-                    return
-                }
-            }
-            activity.onBackPressedDispatcher.addCallback(callback)
-            onDispose {
-                callback.remove()
-            }
-        }
+    val handleRecordAction = ensureRecordingAudioPermissions(context) {
+        @SuppressLint("MissingPermission")
+        viewModel.onRecordTapped()
     }
 
     Column(
