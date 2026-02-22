@@ -81,20 +81,6 @@ class RecorderViewModel : ViewModel() {
         }
     }
 
-    @SuppressLint("DefaultLocale")
-    fun formatMillisToTimestamp(millis: Long): String {
-        val hours = millis / 3600000
-        val minutes = (millis % 3600000) / 60000
-        val seconds = (millis % 60000) / 1000
-        val ms = millis % 1000
-
-        if (hours > 0) {
-            return String.format("%02d:%02d:%02d.%01d", hours, minutes, seconds, ms / 100)
-        }
-
-        return String.format("%02d:%02d.%01d", minutes, seconds, ms / 100)
-    }
-
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun onRecordTapped() = engine.startOrResumeRecording()

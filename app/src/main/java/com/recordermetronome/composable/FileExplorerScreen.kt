@@ -42,6 +42,7 @@ import com.recordermetronome.composable.components.RecordButton
 import com.recordermetronome.composable.dialogs.DeleteRecordingDialog
 import com.recordermetronome.composable.dialogs.RenameRecordingDialog
 import com.recordermetronome.data.RecordingFile
+import com.recordermetronome.util.FormattingHelper
 import com.recordermetronome.util.RecordingFileUtil
 import com.recordermetronome.view_models.FileExplorerViewModel
 import com.recordermetronome.view_models.RecorderViewModel
@@ -210,7 +211,7 @@ fun RecordingFileItem(
 
                 // Duration in the middle
                 Text(
-                    text = RecordingFileUtil.formatDuration(recording.durationMs),
+                    text = FormattingHelper.formatDuration(recording.durationMs),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(start = 8.dp)
                 )
@@ -225,13 +226,13 @@ fun RecordingFileItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = RecordingFileUtil.formatTimestamp(recording.createdTime),
+                    text = FormattingHelper.formatTimestamp(recording.createdTime),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
 
                 Text(
-                    text = RecordingFileUtil.formatFileSize(recording.sizeKb),
+                    text = FormattingHelper.formatFileSize(recording.sizeKb),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )

@@ -1,6 +1,5 @@
 package com.recordermetronome.view_models
 
-import android.annotation.SuppressLint
 import androidx.lifecycle.ViewModel
 import com.recordermetronome.data.RecordingFile
 import com.recordermetronome.util.RecorderEngine
@@ -15,20 +14,6 @@ class PlaybackViewModel : ViewModel() {
 
     private val _currentRecording = MutableStateFlow<RecordingFile?>(null)
     val currentRecording = _currentRecording.asStateFlow()
-
-    @SuppressLint("DefaultLocale")
-    fun formatMillisToTimestamp(millis: Long): String {
-        val hours = millis / 3600000
-        val minutes = (millis % 3600000) / 60000
-        val seconds = (millis % 60000) / 1000
-        val ms = millis % 1000
-
-        if (hours > 0) {
-            return String.format("%02d:%02d:%02d.%01d", hours, minutes, seconds, ms / 100)
-        }
-
-        return String.format("%02d:%02d.%01d", minutes, seconds, ms / 100)
-    }
 
     fun loadRecording(recording: RecordingFile) {
         _currentRecording.value = recording

@@ -37,6 +37,7 @@ import com.recordermetronome.composable.components.WaveformVisualizer
 import com.recordermetronome.composable.dialogs.DeleteRecordingDialog
 import com.recordermetronome.composable.dialogs.RenameRecordingDialog
 import com.recordermetronome.data.RecordingFile
+import com.recordermetronome.util.FormattingHelper
 import com.recordermetronome.util.RecordingFileUtil
 import com.recordermetronome.util.RecordingState
 import com.recordermetronome.view_models.FileExplorerViewModel
@@ -59,8 +60,8 @@ fun PlaybackScreen(
 
     // Track current recording file locally to handle renames
     var currentRecording by remember { mutableStateOf(recordingFile) }
-    val formattedTimestamp = remember(timestamp) { viewModel.formatMillisToTimestamp(timestamp) }
-    val formattedDuration = remember(currentRecording.durationMs) { RecordingFileUtil.formatDuration(currentRecording.durationMs) }
+    val formattedTimestamp = remember(timestamp) { FormattingHelper.formatDurationWithMs(timestamp) }
+    val formattedDuration = remember(currentRecording.durationMs) { FormattingHelper.formatDuration(currentRecording.durationMs) }
 
     // Use pre-loaded recordings if available, otherwise load only when needed
     var existingRecordings by remember { mutableStateOf(preLoadedRecordings ?: emptyList()) }

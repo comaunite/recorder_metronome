@@ -94,24 +94,6 @@ object RecordingFileUtil {
     }
 
     /**
-     * Format duration in milliseconds to MM:SS format
-     */
-    fun formatDuration(millis: Long): String {
-        val seconds = millis / 1000
-        val minutes = seconds / 60
-        val remainingSeconds = seconds % 60
-        return String.format(Locale.US, "%02d:%02d", minutes, remainingSeconds)
-    }
-
-    /**
-     * Format timestamp for display
-     */
-    fun formatTimestamp(millis: Long): String {
-        val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.US)
-        return dateFormat.format(Date(millis))
-    }
-
-    /**
      * Generate default file name for new recordings
      */
     fun generateDefaultFileName(): String {
@@ -176,15 +158,9 @@ object RecordingFileUtil {
         }
     }
 
-
-    fun formatFileSize(sizeKb: Long): String {
-        return if (sizeKb > 1024) {
-            String.format(Locale.US, "%.2f MB", sizeKb / 1024f)
-        } else {
-            String.format(Locale.US, "%d KB", sizeKb)
-        }
-    }
-
+    /**
+     * Share a recording file
+     */
     fun shareRecording(context: Context, recording: RecordingFile) {
         val file = File(recording.filePath)
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)

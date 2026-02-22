@@ -44,6 +44,7 @@ import com.recordermetronome.composable.components.PlayButton
 import com.recordermetronome.composable.components.RecordButton
 import com.recordermetronome.composable.components.StopButton
 import com.recordermetronome.composable.components.WaveformVisualizer
+import com.recordermetronome.util.FormattingHelper
 import com.recordermetronome.view_models.RecorderViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,7 +59,7 @@ fun RecorderScreen(
     val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
     val waveformData by viewModel.accumulatedWaveformData.collectAsStateWithLifecycle()
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
-    val formattedTimestamp = remember(timestamp) { viewModel.formatMillisToTimestamp(timestamp) }
+    val formattedTimestamp = remember(timestamp) { FormattingHelper.formatDurationWithMs(timestamp) }
 
     // Use pre-loaded recordings if available, otherwise load only when needed
     var existingRecordings by remember { mutableStateOf(preLoadedRecordings ?: emptyList()) }
