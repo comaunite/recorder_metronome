@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordermetronome.composable.components.PausePlaybackButton
 import com.recordermetronome.composable.components.PlayButton
-import com.recordermetronome.composable.components.PlaybackControlButtons
 import com.recordermetronome.composable.components.StopButton
 import com.recordermetronome.composable.components.WaveformVisualizer
 import com.recordermetronome.composable.dialogs.DeleteRecordingDialog
@@ -212,27 +211,41 @@ fun PlaybackScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // Playback control buttons
-            PlaybackControlButtons(
-                leftButton = {
-                    when (state) {
-                        RecordingState.PLAYBACK -> {
-                            PausePlaybackButton({ viewModel.onPausePlaybackTapped() })
-                        }
-                        else -> {
-                            PlayButton(enabled = true, onClick = { viewModel.onPlaybackTapped() })
-                        }
+            Row(
+                modifier = modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                when (state) {
+                    RecordingState.IDLE -> {
+                        PlayButton(true, { viewModel.onPlaybackTapped() })
+
+                        Spacer(modifier = Modifier)
+
+                        StopButton(true, { viewModel.onStopTapped() })
                     }
-                },
-                centerButton = {
-                    // Center is empty for playback screen
-                    Spacer(modifier = Modifier)
-                },
-                rightButton = {
-                    StopButton(enabled = state in listOf(RecordingState.PLAYBACK, RecordingState.PAUSED)) {
-                        viewModel.onStopTapped()
+
+                    RecordingState.RECORDING -> {
+                        // Error state - should never be reached
+                    }
+
+                    RecordingState.PAUSED -> {
+                        PlayButton(true, { viewModel.onPlaybackTapped() })
+
+                        Spacer(modifier = Modifier)
+
+                        StopButton(true, { viewModel.onStopTapped() })
+                    }
+
+                    RecordingState.PLAYBACK -> {
+                        PausePlaybackButton({ viewModel.onPausePlaybackTapped() })
+
+                        Spacer(modifier = Modifier)
+
+                        StopButton(true, { viewModel.onStopTapped() })
                     }
                 }
-            )
+            }
         }
     }
 }
