@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.recordermetronome.data.RecordingFile
+import com.recordermetronome.data.WaveformData
 import com.recordermetronome.util.RecorderEngine
 import com.recordermetronome.util.RecordingFileUtil
+import com.recordermetronome.util.RecordingState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +17,10 @@ import java.io.File
 class PlaybackViewModel : ViewModel() {
     private val engine = RecorderEngine()
     val recordingStateFlow = engine.recordingStateFlow
-    val accumulatedWaveformData = engine.waveformDataStateFlow
+
+    private val _accumulatedWaveformData = MutableStateFlow(WaveformData())
+    val accumulatedWaveformData = _accumulatedWaveformData.asStateFlow()
+
     val timestamp = engine.timestampStateFlow
 
     private val _currentRecording = MutableStateFlow<RecordingFile?>(null)
@@ -24,6 +29,30 @@ class PlaybackViewModel : ViewModel() {
     private val _existingRecordings = MutableStateFlow<List<RecordingFile>>(emptyList())
     val existingRecordings = _existingRecordings.asStateFlow()
 
+    init {
+        // Listen to full waveform updates (at load or playback start)
+        viewModelScope.launch {
+            engine.waveformDataStateFlow.collect { waveformData ->
+                if (waveformData.amplitudes.isNotEmpty()) {
+                    _accumulatedWaveformData.value = waveformData
+                }
+            }
+        }
+
+        // Listen to playback position updates to track the red bar position
+        viewModelScope.launch {
+            engine.playbackPositionStateFlow.collect { position ->
+                if (recordingStateFlow.value == RecordingState.PLAYBACK) {
+                    // Update only the position in the accumulated waveform
+                    val current = _accumulatedWaveformData.value
+                    _accumulatedWaveformData.value = current.copy(
+                        currentPosition = position.currentIndex
+                    )
+                }
+            }
+        }
+    }
+
     fun initialize(
         context: Context,
         recording: RecordingFile,
@@ -31,9 +60,14 @@ class PlaybackViewModel : ViewModel() {
     ) {
         _currentRecording.value = recording
 
-        // Load audio file directly (it's a synchronous operation)
         println("PLAYBACK_VM: Initializing with recording: ${recording.name} at ${recording.filePath}")
-        engine.loadAudioFile(recording.filePath)
+        try {
+            val parsedAudio = RecordingFileUtil.readRecordingFile(recording.filePath)
+            engine.loadRecordingForPlayback(parsedAudio)
+        } catch (e: Exception) {
+            println("PLAYBACK_VM: Error loading audio file: ${e.message}")
+            e.printStackTrace()
+        }
         println("PLAYBACK_VM: Audio file loading completed")
 
         if (preLoadedRecordings != null) {

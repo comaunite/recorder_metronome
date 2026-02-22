@@ -7,6 +7,7 @@ import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
 import androidx.annotation.RequiresPermission
+import com.recordermetronome.data.ParsedAudioData
 import com.recordermetronome.data.PlaybackPosition
 import com.recordermetronome.data.WaveformData
 import com.recordermetronome.data.WaveformUpdate
@@ -14,8 +15,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.ByteArrayOutputStream
-import java.nio.ByteBuffer
+import kotlin.collections.addAll
 import kotlin.math.abs
+import kotlin.text.clear
+import kotlin.text.toLong
 
 enum class RecordingState {
     IDLE, RECORDING, PAUSED, PLAYBACK
@@ -158,9 +161,8 @@ class RecorderEngine {
             amplitudeList.toList()
         } else {
             // Fallback: generate amplitudes if the list is empty (shouldn't happen normally)
-            val durationSeconds = (audioBytes.size / (sampleRate * 2f))
-            val targetBarCount = (durationSeconds * 3).toInt().coerceAtLeast(1)
-            extractAmplitudes(audioBytes, sampleCount = targetBarCount)
+            // Use consistent waveform resolution (20 bars per second)
+            extractAmplitudesFromAudio(audioBytes, sampleRate, 1, 16)
         }
 
         // Calculate a starting position based on pausedPlaybackPosition
@@ -237,7 +239,7 @@ class RecorderEngine {
                             break
                         }
 
-                        Thread.sleep(16) // ~60Hz update
+                        Thread.sleep(10) // ~100Hz update for smoother bar tracking
                     }
 
                     audioTrack?.stop()
@@ -267,8 +269,9 @@ class RecorderEngine {
         playbackThread?.start()
     }
 
-
-    // Emit only newly added amplitude values during recording
+    /**
+     * Update waveform data and emit newly added values
+     */
     private fun updateWaveform() {
         // Extract amplitude from NEW data only (since last update)
         val allData = recordedData.toByteArray()
@@ -292,6 +295,25 @@ class RecorderEngine {
         }
     }
 
+    /**
+     * Extract amplitudes from audio data with standard waveform resolution
+     * Calculates duration based on audio parameters and generates amplitude bars
+     * at a consistent rate of 20 bars per second (1 bar every 50ms)
+     */
+    private fun extractAmplitudesFromAudio(
+        audioData: ByteArray,
+        sampleRate: Int,
+        channels: Int,
+        bitsPerSample: Int
+    ): List<Float> {
+        val durationSeconds = (audioData.size / (sampleRate * channels * (bitsPerSample / 8))).toFloat()
+        val targetBarCount = (durationSeconds * (1000 / waveformResolutionInMs)).toInt().coerceAtLeast(1)
+        return extractAmplitudes(audioData, sampleCount = targetBarCount)
+    }
+
+    /**
+     * Extract amplitudes from audio data with standard waveform resolution
+     */
     private fun extractAmplitudes(audioBytes: ByteArray, sampleCount: Int = 128): List<Float> {
         val amplitudes = mutableListOf<Float>()
         val bytesPerSample = 2 // 16-bit audio
@@ -356,67 +378,26 @@ class RecorderEngine {
     }
 
     /**
-     * Load audio data from a WAV file for playback
+     * Load audio data from parsed audio data
      */
-    fun loadAudioFile(filePath: String) {
+    fun loadRecordingForPlayback(data: ParsedAudioData) {
         try {
-            val file = java.io.File(filePath)
-            if (!file.exists()) {
-                println("LOAD ERROR: File does not exist: $filePath")
-                return
-            }
-
-            val audioBytes = file.readBytes()
-            if (audioBytes.isEmpty()) {
-                println("LOAD ERROR: File is empty")
-                return
-            }
-
-            var audioData: ByteArray = ByteArray(0)
-            var parsedSampleRate = sampleRate
-            var parsedChannels = 1
-            var parsedBitsPerSample = 16
-            var hasValidHeader = false
-
-            // Try to parse WAV header
-            if (audioBytes.size > 44) {
-                val buffer = ByteBuffer.wrap(audioBytes)
-                buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
-
-                val sampleRate = buffer.getInt(24)
-                val channels = buffer.getShort(22).toInt()
-                val bitsPerSample = buffer.getShort(34).toInt()
-
-                if (sampleRate > 0 && channels > 0 && bitsPerSample > 0) {
-                    // Valid header found
-                    audioData = audioBytes.copyOfRange(44, audioBytes.size)
-                    parsedSampleRate = sampleRate
-                    parsedChannels = channels
-                    parsedBitsPerSample = bitsPerSample
-                    hasValidHeader = true
-                    println("LOAD: Found valid WAV header - SR:$sampleRate CH:$channels BPS:$bitsPerSample")
-                }
-            }
-
-            // If no valid header found, treat entire file as raw PCM data
-            if (!hasValidHeader) {
-                println("LOAD: No valid WAV header found, treating entire file as raw PCM data")
-                audioData = audioBytes
-            }
-
-            // Extract amplitudes
-            val durationSeconds = (audioData.size / (parsedSampleRate * parsedChannels * (parsedBitsPerSample / 8))).toFloat()
-            val targetBarCount = (durationSeconds * 3).toInt().coerceAtLeast(1)
-            val amplitudes = extractAmplitudes(audioData, sampleCount = targetBarCount)
+            // Extract amplitudes using standard waveform resolution
+            val amplitudes = extractAmplitudesFromAudio(
+                data.audioData,
+                data.sampleRate,
+                data.channels,
+                data.bitsPerSample
+            )
 
             // Reset state
             recordedData.reset()
-            recordedData.write(audioData)
+            recordedData.write(data.audioData)
             amplitudeList.clear()
             amplitudeList.addAll(amplitudes)
             pausedPlaybackPosition = 0L
-            totalProcessedBytes = audioData.size.toLong()
-            lastWaveformProcessedBytes = audioData.size.toLong()
+            totalProcessedBytes = data.audioData.size.toLong()
+            lastWaveformProcessedBytes = data.audioData.size.toLong()
             recordingState.value = RecordingState.PAUSED
             timestamp.value = 0L
 
@@ -427,7 +408,7 @@ class RecorderEngine {
                 currentPosition = 0
             )
 
-            println("LOAD: Successfully loaded ${audioData.size} bytes from $filePath")
+            println("LOAD: Successfully loaded ${data.audioData.size} bytes - SR:${data.sampleRate}Hz CH:${data.channels} BPS:${data.bitsPerSample}bit")
         } catch (e: Exception) {
             println("LOAD ERROR: ${e.message}")
             e.printStackTrace()

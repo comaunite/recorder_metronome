@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
 import com.recordermetronome.data.RecordingFile
+import com.recordermetronome.data.ParsedAudioData
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
@@ -227,6 +228,63 @@ object RecordingFileUtil {
         }
 
         context.startActivity(Intent.createChooser(shareIntent, "Share Recording"))
+    }
+
+    /**
+     * Read and parse a recording file, extracting audio data and WAV header information
+     */
+    fun readRecordingFile(filePath: String): ParsedAudioData {
+        val file = File(filePath)
+        if (!file.exists()) {
+            println("LOAD ERROR: File does not exist: $filePath")
+            throw Exception("File does not exist")
+        }
+
+        val audioBytes = file.readBytes()
+        if (audioBytes.isEmpty()) {
+            println("LOAD ERROR: File is empty")
+            throw Exception("File is empty")
+        }
+
+        var audioData = ByteArray(0)
+        var parsedSampleRate = 44100 // Default fallback
+        var parsedChannels = 1
+        var parsedBitsPerSample = 16
+        var hasValidHeader = false
+
+        // Try to parse WAV header
+        if (audioBytes.size > 44) {
+            val buffer = ByteBuffer.wrap(audioBytes)
+            buffer.order(ByteOrder.LITTLE_ENDIAN)
+
+            val sampleRate = buffer.getInt(24)
+            val channels = buffer.getShort(22).toInt()
+            val bitsPerSample = buffer.getShort(34).toInt()
+
+            if (sampleRate > 0 && channels > 0 && bitsPerSample > 0) {
+                // Valid header found
+                audioData = audioBytes.copyOfRange(44, audioBytes.size)
+                parsedSampleRate = sampleRate
+                parsedChannels = channels
+                parsedBitsPerSample = bitsPerSample
+                hasValidHeader = true
+                println("LOAD: Found valid WAV header - SR:$sampleRate CH:$channels BPS:$bitsPerSample")
+            }
+        }
+
+        // If no valid header found, treat entire file as raw PCM data
+        if (!hasValidHeader) {
+            println("LOAD: No valid WAV header found, treating entire file as raw PCM data")
+            audioData = audioBytes
+        }
+
+        return ParsedAudioData(
+            audioData = audioData,
+            sampleRate = parsedSampleRate,
+            channels = parsedChannels,
+            bitsPerSample = parsedBitsPerSample,
+            hasValidHeader = hasValidHeader
+        )
     }
 }
 
