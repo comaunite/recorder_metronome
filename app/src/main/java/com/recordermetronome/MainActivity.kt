@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import com.recordermetronome.composable.FileExplorerScreen
 import com.recordermetronome.composable.RecorderScreen
@@ -29,6 +31,7 @@ class MainActivity : ComponentActivity() {
             RecorderMetronomeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val currentScreen = remember { mutableStateOf<Screen>(Screen.FileExplorer) }
+                    val preLoadedRecordings by fileExplorerViewModel.recordings.collectAsStateWithLifecycle()
 
                     when (currentScreen.value) {
                         Screen.Recorder -> {
@@ -37,7 +40,8 @@ class MainActivity : ComponentActivity() {
                                 viewModel = recorderViewModel,
                                 onNavigateToFileExplorer = {
                                     currentScreen.value = Screen.FileExplorer
-                                }
+                                },
+                                preLoadedRecordings = preLoadedRecordings
                             )
                         }
 

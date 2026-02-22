@@ -50,7 +50,8 @@ import com.recordermetronome.view_models.RecorderViewModel
 fun RecorderScreen(
     modifier: Modifier = Modifier,
     viewModel: RecorderViewModel,
-    onNavigateToFileExplorer: () -> Unit = {}
+    onNavigateToFileExplorer: () -> Unit = {},
+    preLoadedRecordings: List<com.recordermetronome.data.RecordingFile>? = null
 ) {
     val context = LocalContext.current
     val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
@@ -58,10 +59,17 @@ fun RecorderScreen(
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
     val formattedTimestamp = remember(timestamp) { viewModel.formatMillisToTimestamp(timestamp) }
 
-    // Load existing recordings for validation
-    var existingRecordings by remember { mutableStateOf(emptyList<com.recordermetronome.data.RecordingFile>()) }
+    // Use pre-loaded recordings if available, otherwise load only when needed
+    var existingRecordings by remember { mutableStateOf(preLoadedRecordings ?: emptyList<com.recordermetronome.data.RecordingFile>()) }
+
+    // Only load from disk if recordings weren't pre-loaded
+    var shouldLoadRecordings by remember { mutableStateOf(preLoadedRecordings == null) }
+
     LaunchedEffect(Unit) {
-        existingRecordings = RecordingFileUtil.getRecordingFiles(context)
+        if (shouldLoadRecordings) {
+            existingRecordings = RecordingFileUtil.getRecordingFiles(context)
+            shouldLoadRecordings = false
+        }
     }
 
     val permissionLauncher =
