@@ -33,31 +33,7 @@ fun WaveformVisualizer(
         val width = size.width
         val height = size.height
         val centerY = height / 2f
-        val centerX = width / 2f + 2 // Fixed red line position
-
-        if (amplitudes.isEmpty()) {
-            // Draw the center line when empty
-            drawLine(
-                color = waveColor.copy(alpha = 0.2f),
-                start = Offset(0f, centerY),
-                end = Offset(width, centerY),
-                strokeWidth = 1f
-            )
-
-            // Draw red playback line
-            drawLine(
-                color = Color.Red,
-                start = Offset(centerX, 0f),
-                end = Offset(centerX, height),
-                strokeWidth = 3f
-            )
-            return@Canvas
-        }
-
-        val maxAmplitude = waveformData.maxAmplitude.coerceAtLeast(1f)
-        val barWidth = 1.dp.toPx() // Fixed thin bar width
-        val barSpacing = 1.dp.toPx() // Fixed spacing
-        val barFullWidth = barWidth + barSpacing
+        val centerX = width / 2f
 
         // Draw the center line
         drawLine(
@@ -67,36 +43,43 @@ fun WaveformVisualizer(
             strokeWidth = 1f
         )
 
-        // Calculate which bars to draw based on current position
-        // The current position should be at centerX
-        val barsToLeft = (centerX / barFullWidth).toInt()
-        val barsToRight = ((width - centerX) / barFullWidth).toInt()
+        if (!amplitudes.isEmpty()) {
+            val maxAmplitude = waveformData.maxAmplitude.coerceAtLeast(1f)
+            val barWidth = 1.dp.toPx() // Fixed thin bar width
+            val barSpacing = 1.dp.toPx() // Fixed spacing
+            val barFullWidth = barWidth + barSpacing
 
-        val startIndex = (currentPosition - barsToLeft).coerceAtLeast(0)
-        val endIndex = (currentPosition + barsToRight).coerceAtMost(amplitudes.size - 1)
+            // Calculate which bars to draw based on current position
+            // The current position should be at centerX
+            val barsToLeft = (centerX / barFullWidth).toInt()
+            val barsToRight = ((width - centerX) / barFullWidth).toInt()
 
-        // Draw amplitude bars only if we have a valid range
-        if (startIndex <= endIndex) {
-            for (i in startIndex..endIndex) {
-                val amplitude = amplitudes[i]
-                val normalized = (abs(amplitude) / maxAmplitude).coerceIn(0f, 1f)
-                val barHeight = (height / 2) * normalized
+            val startIndex = (currentPosition - barsToLeft).coerceAtLeast(0)
+            val endIndex = (currentPosition + barsToRight).coerceAtMost(amplitudes.size - 1)
 
-                // Calculate x position relative to current position
-                val offsetFromCurrent = i - currentPosition
-                val xPosition = centerX + (offsetFromCurrent * barFullWidth)
+            // Draw amplitude bars only if we have a valid range
+            if (startIndex <= endIndex) {
+                for (i in startIndex..endIndex) {
+                    val amplitude = amplitudes[i]
+                    val normalized = (abs(amplitude) / maxAmplitude).coerceIn(0f, 1f)
+                    val barHeight = (height / 2) * normalized
 
-                drawRect(
-                    color = waveColor,
-                    topLeft = Offset(
-                        xPosition,
-                        centerY - barHeight / 2
-                    ),
-                    size = Size(
-                        barWidth.coerceAtLeast(1f),
-                        barHeight.coerceAtLeast(1f)
+                    // Calculate x position relative to current position
+                    val offsetFromCurrent = i - currentPosition
+                    val xPosition = centerX + (offsetFromCurrent * barFullWidth)
+
+                    drawRect(
+                        color = waveColor,
+                        topLeft = Offset(
+                            xPosition,
+                            centerY - barHeight / 2
+                        ),
+                        size = Size(
+                            barWidth.coerceAtLeast(1f),
+                            barHeight.coerceAtLeast(1f)
+                        )
                     )
-                )
+                }
             }
         }
 
