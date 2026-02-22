@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -118,11 +119,11 @@ fun RecorderScreen(
         // Top App Bar with file explorer button
         TopAppBar(
             title = { Text("Recorder") },
-            actions = {
+            navigationIcon = {
                 IconButton(onClick = { viewModel.onBackPressed() }) {
                     Icon(
-                        imageVector = Icons.Filled.Menu,
-                        contentDescription = "View recordings"
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back to recordings"
                     )
                 }
             }

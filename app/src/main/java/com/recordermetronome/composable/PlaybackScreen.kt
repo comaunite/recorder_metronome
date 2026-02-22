@@ -56,8 +56,11 @@ fun PlaybackScreen(
     val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
     val waveformData by viewModel.accumulatedWaveformData.collectAsStateWithLifecycle()
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
+
+    // Track current recording file locally to handle renames
+    var currentRecording by remember { mutableStateOf(recordingFile) }
     val formattedTimestamp = remember(timestamp) { viewModel.formatMillisToTimestamp(timestamp) }
-    val formattedDuration = remember(recordingFile.durationMs) { RecordingFileUtil.formatDuration(recordingFile.durationMs) }
+    val formattedDuration = remember(currentRecording.durationMs) { RecordingFileUtil.formatDuration(currentRecording.durationMs) }
 
     // Use pre-loaded recordings if available, otherwise load only when needed
     var existingRecordings by remember { mutableStateOf(preLoadedRecordings ?: emptyList()) }
@@ -75,18 +78,19 @@ fun PlaybackScreen(
     var menuExpanded by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
-    var renameText by remember { mutableStateOf(recordingFile.name) }
+    var renameText by remember { mutableStateOf(currentRecording.name) }
 
     // Load the recording when screen is first displayed
     LaunchedEffect(recordingFile) {
         viewModel.loadRecording(recordingFile)
+        currentRecording = recordingFile
     }
 
     if (showDeleteDialog) {
         DeleteRecordingDialog(
-            recordingName = recordingFile.name,
+            recordingName = currentRecording.name,
             onDelete = {
-                fileExplorerViewModel.deleteRecording(context, recordingFile)
+                fileExplorerViewModel.deleteRecording(context, currentRecording)
                 showDeleteDialog = false
                 onNavigateBack()
             },
@@ -96,11 +100,14 @@ fun PlaybackScreen(
 
     if (showRenameDialog) {
         RenameRecordingDialog(
-            currentRecording = recordingFile,
+            currentRecording = currentRecording,
             existingRecordings = existingRecordings,
             renameText = renameText,
             onRename = { newName ->
-                fileExplorerViewModel.renameRecording(context, recordingFile, newName)
+                fileExplorerViewModel.renameRecording(context, currentRecording, newName)
+                // Update current recording with new name
+                currentRecording = currentRecording.copy(name = newName)
+                renameText = newName
                 showRenameDialog = false
             },
             onRenameTextChange = { renameText = it },
@@ -140,7 +147,7 @@ fun PlaybackScreen(
                             text = { Text("Rename") },
                             onClick = {
                                 menuExpanded = false
-                                renameText = recordingFile.name
+                                renameText = currentRecording.name
                                 showRenameDialog = true
                             }
                         )
@@ -155,7 +162,7 @@ fun PlaybackScreen(
                             text = { Text("Share") },
                             onClick = {
                                 menuExpanded = false
-                                RecordingFileUtil.shareRecording(context, recordingFile)
+                                RecordingFileUtil.shareRecording(context, currentRecording)
                             }
                         )
                     }
@@ -170,9 +177,9 @@ fun PlaybackScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // File name
+            // File name - now updates when renamed
             Text(
-                text = recordingFile.name,
+                text = currentRecording.name,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
