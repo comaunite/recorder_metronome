@@ -15,13 +15,13 @@ class RecordingFileTest {
         val recording = RecordingFile(
             name = name,
             filePath = filePath,
-            duration = duration,
+            durationMs = duration,
             createdTime = createdTime
         )
 
         assertEquals(name, recording.name)
         assertEquals(filePath, recording.filePath)
-        assertEquals(duration, recording.duration)
+        assertEquals(duration, recording.durationMs)
         assertEquals(createdTime, recording.createdTime)
     }
 
@@ -83,18 +83,18 @@ class RecordingFileTest {
 
         assertEquals("Modified", copied.name)
         assertEquals(original.filePath, copied.filePath)
-        assertEquals(original.duration, copied.duration)
+        assertEquals(original.durationMs, copied.durationMs)
         assertEquals(original.createdTime, copied.createdTime)
     }
 
     @Test
     fun recordingFile_copyWithMultipleChanges() {
         val original = RecordingFile("Original", "/path", 5000L, 100L)
-        val copied = original.copy(name = "New", duration = 10000L)
+        val copied = original.copy(name = "New", durationMs = 10000L)
 
         assertEquals("New", copied.name)
         assertEquals("/path", copied.filePath)
-        assertEquals(10000L, copied.duration)
+        assertEquals(10000L, copied.durationMs)
         assertEquals(100L, copied.createdTime)
     }
 }

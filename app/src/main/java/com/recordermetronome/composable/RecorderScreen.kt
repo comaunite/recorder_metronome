@@ -33,7 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.recordermetronome.RecordingState
+import com.recordermetronome.util.RecordingState
 import com.recordermetronome.composable.components.PausePlaybackButton
 import com.recordermetronome.composable.components.PauseRecordButton
 import com.recordermetronome.composable.dialogs.ExitRecordingDialog

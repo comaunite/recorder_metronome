@@ -191,7 +191,7 @@ fun RecordingFileItem(
 
             // Duration in the middle
             Text(
-                text = RecordingFileUtil.formatDuration(recording.duration),
+                text = RecordingFileUtil.formatDuration(recording.durationMs),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(start = 8.dp)
             )

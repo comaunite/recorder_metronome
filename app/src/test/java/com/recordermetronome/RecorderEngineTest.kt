@@ -1,5 +1,7 @@
 package com.recordermetronome
 
+import com.recordermetronome.util.RecorderEngine
+import com.recordermetronome.util.RecordingState
 import org.junit.Test
 import org.junit.Assert.*
 import org.junit.runner.RunWith

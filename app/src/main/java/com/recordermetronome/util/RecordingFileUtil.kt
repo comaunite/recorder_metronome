@@ -4,6 +4,8 @@ import android.content.Context
 import com.recordermetronome.data.RecordingFile
 import java.io.File
 import java.io.RandomAccessFile
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,13 +32,13 @@ object RecordingFileUtil {
         recordingsDir.listFiles()?.forEach { file ->
             if (file.isFile && file.name.endsWith(".wav")) {
                 try {
-                    val duration = getWavDuration(file)
+                    val durationInMs = getWavDuration(file)
                     val createdTime = file.lastModified()
                     recordingFiles.add(
                         RecordingFile(
                             name = file.nameWithoutExtension,
                             filePath = file.absolutePath,
-                            duration = duration,
+                            durationMs = durationInMs,
                             createdTime = createdTime
                         )
                     )
@@ -54,58 +56,38 @@ object RecordingFileUtil {
      * Get duration of a WAV file in milliseconds
      */
     private fun getWavDuration(file: File): Long {
-        return try {
-            RandomAccessFile(file, "r").use { raf ->
-                70L
-                // TODO: Fix the length calculation
-//                // Seek to byte rate position (at offset 28 in WAV header)
-//                raf.seek(24)
-//                val byteRateBytes = ByteArray(4)
-//                raf.read(byteRateBytes)
-//                val byteRate = byteRateBytes.toInt()
-//
-//                // Seek to data chunk size (after "data" marker)
-//                val fileBytes = raf.readBytes()
-//                raf.seek(0)
-//                val header = raf.readBytes()
-//
-//                val dataSize = getWavDataSize(header)
-//                if (dataSize > 0 && byteRate > 0) {
-//                    (dataSize * 1000L) / byteRate
-//                } else {
-//                    0L
-//                }
-            }
-        } catch (e: Exception) {
-            0L
-        }
-    }
+        var durationInMs = 0L
 
-    /**
-     * Extract data chunk size from WAV header
-     */
-    private fun getWavDataSize(wavHeader: ByteArray): Int {
-        return try {
-            // Find "data" marker (0x64617461)
-            var dataPos = 12 // Start after RIFF header
-            while (dataPos < wavHeader.size - 8) {
-                if (wavHeader[dataPos].toInt() == 0x64 &&
-                    wavHeader[dataPos + 1].toInt() == 0x61 &&
-                    wavHeader[dataPos + 2].toInt() == 0x74 &&
-                    wavHeader[dataPos + 3].toInt() == 0x61
-                ) {
-                    // Found data marker, read size at next 4 bytes
-                    return ((wavHeader[dataPos + 7].toInt() and 0xff) shl 24) or
-                            ((wavHeader[dataPos + 6].toInt() and 0xff) shl 16) or
-                            ((wavHeader[dataPos + 5].toInt() and 0xff) shl 8) or
-                            (wavHeader[dataPos + 4].toInt() and 0xff)
+        try {
+            RandomAccessFile(file, "r").use { raf ->
+                val header = ByteArray(44)
+                raf.readFully(header)
+
+                val buffer = ByteBuffer.wrap(header)
+                buffer.order(ByteOrder.LITTLE_ENDIAN)
+
+                val sampleRate = buffer.getInt(24)
+                val channels = buffer.getShort(22).toInt()
+                val bitsPerSample = buffer.getShort(34).toInt()
+
+                // Validate parsed values
+                if (sampleRate <= 0 || channels <= 0 || bitsPerSample <= 0) {
+                    return 0L
                 }
-                dataPos++
+
+                val dataSize = file.length() - 44
+                val bytesPerSecond = sampleRate * channels * (bitsPerSample / 8)
+
+                if (bytesPerSecond > 0) {
+                    val durationSeconds = dataSize / bytesPerSecond
+                    durationInMs = durationSeconds * 1000
+                }
             }
-            0
         } catch (e: Exception) {
-            0
+            e.printStackTrace()
         }
+
+        return durationInMs
     }
 
     /**
@@ -115,7 +97,7 @@ object RecordingFileUtil {
         val seconds = millis / 1000
         val minutes = seconds / 60
         val remainingSeconds = seconds % 60
-        return String.format("%02d:%02d", minutes, remainingSeconds)
+        return String.format(Locale.US, "%02d:%02d", minutes, remainingSeconds)
     }
 
     /**
@@ -137,7 +119,7 @@ object RecordingFileUtil {
     /**
      * Save audio data to disk in the recordings directory
      */
-    fun saveToDisk(context: Context, fileName: String, audioData: ByteArray) {
+    fun saveRecording(context: Context, fileName: String, audioData: ByteArray) {
         if (audioData.isNotEmpty()) {
             try {
                 // Create recordings directory

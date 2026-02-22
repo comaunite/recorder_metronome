@@ -6,14 +6,13 @@ import android.content.Context
 import androidx.annotation.RequiresPermission
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.recordermetronome.RecorderEngine
-import com.recordermetronome.RecordingState
+import com.recordermetronome.util.RecorderEngine
+import com.recordermetronome.util.RecordingState
 import com.recordermetronome.data.WaveformData
 import com.recordermetronome.util.RecordingFileUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.File
 
 class RecorderViewModel : ViewModel() {
     private val engine = RecorderEngine()
@@ -115,7 +114,7 @@ class RecorderViewModel : ViewModel() {
         _showSaveDialog.value = false
 
         engine.finalize { audioData ->
-            RecordingFileUtil.saveToDisk(context, fileName, audioData)
+            RecordingFileUtil.saveRecording(context, fileName, audioData)
             callback()
         }
     }
@@ -133,7 +132,7 @@ class RecorderViewModel : ViewModel() {
         _showBackDialog.value = false
         val fileName = RecordingFileUtil.generateDefaultFileName()
         engine.finalize { audioData ->
-            RecordingFileUtil.saveToDisk(context, fileName, audioData)
+            RecordingFileUtil.saveRecording(context, fileName, audioData)
         }
         callback()
     }

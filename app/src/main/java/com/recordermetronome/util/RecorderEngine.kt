@@ -1,4 +1,4 @@
-package com.recordermetronome
+package com.recordermetronome.util
 
 import android.Manifest
 import android.media.AudioAttributes
@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.ByteArrayOutputStream
+import kotlin.math.abs
 
 enum class RecordingState {
     IDLE, RECORDING, PAUSED, PLAYBACK
@@ -305,7 +306,7 @@ class RecorderEngine {
                 if (j + 1 < audioBytes.size) {
                     val sample =
                         ((audioBytes[j + 1].toInt() shl 8) or (audioBytes[j].toInt() and 0xFF))
-                    sum += kotlin.math.abs(sample)
+                    sum += abs(sample)
                 }
             }
 

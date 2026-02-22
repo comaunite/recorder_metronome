@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class FileExplorerViewModel : ViewModel() {
-    // Recordings list
     private val _recordings = MutableStateFlow<List<RecordingFile>>(emptyList())
     val recordings = _recordings.asStateFlow()
 
