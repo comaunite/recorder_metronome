@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.math.abs
 
 enum class RecordingState {
@@ -352,5 +354,68 @@ class RecorderEngine {
             release()
         }
         recorder = null
+    }
+
+    /**
+     * Load audio data from a WAV file for playback
+     */
+    fun loadAudioFile(filePath: String) {
+        try {
+            val file = java.io.File(filePath)
+            if (!file.exists()) {
+                println("LOAD ERROR: File does not exist: $filePath")
+                return
+            }
+
+            val audioBytes = file.readBytes()
+            if (audioBytes.size <= 44) {
+                println("LOAD ERROR: File is too small to be a valid WAV file")
+                return
+            }
+
+            // Parse WAV header to get sample rate
+            val buffer = ByteBuffer.wrap(audioBytes)
+            buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
+
+            val sampleRate = buffer.getInt(24)
+            val channels = buffer.getShort(22).toInt()
+            val bitsPerSample = buffer.getShort(34).toInt()
+
+            if (sampleRate <= 0 || channels <= 0 || bitsPerSample <= 0) {
+                println("LOAD ERROR: Invalid WAV header")
+                return
+            }
+
+            // Extract audio data (skip 44-byte header)
+            val audioData = audioBytes.copyOfRange(44, audioBytes.size)
+
+            // Extract amplitudes
+            val durationSeconds = (audioData.size / (sampleRate * channels * (bitsPerSample / 8))).toFloat()
+            val targetBarCount = (durationSeconds * 3).toInt().coerceAtLeast(1)
+            val amplitudes = extractAmplitudes(audioData, sampleCount = targetBarCount)
+
+            // Reset state
+            recordedData.reset()
+            recordedData.write(audioData)
+            amplitudeList.clear()
+            amplitudeList.addAll(amplitudes)
+            pausedPlaybackPosition = 0L
+            totalProcessedBytes = audioData.size.toLong()
+            lastWaveformProcessedBytes = audioData.size.toLong()
+            recordingState.value = RecordingState.PAUSED
+            timestamp.value = 0L
+
+            // Emit waveform data
+            waveformData.value = WaveformData(
+                amplitudes = amplitudes,
+                maxAmplitude = maxAmplitude,
+                currentPosition = 0
+            )
+
+            println("LOAD: Successfully loaded ${audioData.size} bytes from $filePath")
+        } catch (e: Exception) {
+            println("LOAD ERROR: ${e.message}")
+            e.printStackTrace()
+        }
     }
 }

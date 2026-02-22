@@ -5,7 +5,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material3.ripple
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,7 +55,8 @@ fun FileExplorerScreen(
     modifier: Modifier = Modifier,
     recorderViewModel: RecorderViewModel,
     fileExplorerViewModel: FileExplorerViewModel,
-    onStartRecording: () -> Unit
+    onStartRecording: () -> Unit,
+    onPlayRecording: (RecordingFile) -> Unit = {}
 ) {
     val context = LocalContext.current
     val recordings by fileExplorerViewModel.recordings.collectAsStateWithLifecycle()
@@ -115,7 +119,12 @@ fun FileExplorerScreen(
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp)
                 ) {
                     items(recordings) { recording ->
-                        RecordingFileItem(recording, recordings, fileExplorerViewModel)
+                        RecordingFileItem(
+                            recording,
+                            recordings,
+                            fileExplorerViewModel,
+                            onPlayRecording = { onPlayRecording(recording) }
+                        )
                     }
                 }
             }
@@ -137,7 +146,8 @@ fun FileExplorerScreen(
 fun RecordingFileItem(
     recording: RecordingFile,
     recordings: List<RecordingFile>,
-    fileExplorerViewModel: FileExplorerViewModel = remember { FileExplorerViewModel() }
+    fileExplorerViewModel: FileExplorerViewModel = remember { FileExplorerViewModel() },
+    onPlayRecording: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var menuExpanded by remember { mutableStateOf(false) }
@@ -175,7 +185,12 @@ fun RecordingFileItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 8.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(bounded = true),
+                onClick = { onPlayRecording() }
+            ),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
