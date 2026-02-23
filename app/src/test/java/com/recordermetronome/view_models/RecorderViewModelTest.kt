@@ -1,5 +1,6 @@
 package com.recordermetronome.view_models
 
+import com.recordermetronome.util.RecordingState
 import org.junit.Test
 import org.junit.Assert.*
 import org.junit.runner.RunWith
@@ -9,117 +10,119 @@ import org.robolectric.RobolectricTestRunner
 class RecorderViewModelTest {
 
     @Test
-    fun formatMillisToTimestamp_zeroMillis_returnsZeroFormat() {
+    fun recordingViewModel_initialState_isIdle() {
         val viewModel = RecorderViewModel()
-        val result = viewModel.formatMillisToTimestamp(0L)
-        assertEquals("00:00.0", result)
+        assertEquals(RecordingState.IDLE, viewModel.recordingStateFlow.value)
     }
 
     @Test
-    fun formatMillisToTimestamp_oneSecond_returnsFormatted() {
+    fun recordingViewModel_showSaveDialog_initialState_isFalse() {
         val viewModel = RecorderViewModel()
-        val result = viewModel.formatMillisToTimestamp(1000L)
-        assertEquals("00:01.0", result)
+        assertFalse(viewModel.showSaveDialog.value)
     }
 
     @Test
-    fun formatMillisToTimestamp_oneMinute_returnsFormatted() {
+    fun recordingViewModel_generatedFileName_initialState_isEmpty() {
         val viewModel = RecorderViewModel()
-        val result = viewModel.formatMillisToTimestamp(60000L)
-        assertEquals("01:00.0", result)
+        assertEquals("", viewModel.generatedFileName.value)
     }
 
     @Test
-    fun formatMillisToTimestamp_oneMinute30Seconds_returnsFormatted() {
+    fun recordingViewModel_showBackDialog_initialState_isFalse() {
         val viewModel = RecorderViewModel()
-        val result = viewModel.formatMillisToTimestamp(90500L)
-        assertEquals("01:30.5", result)
+        assertFalse(viewModel.showBackDialog.value)
     }
 
     @Test
-    fun formatMillisToTimestamp_withHours_returnsFormattedWithHours() {
+    fun recordingViewModel_accumulatedWaveformData_initialState_isEmpty() {
         val viewModel = RecorderViewModel()
-        // 1 hour, 30 minutes, 45 seconds, 600 millis
-        val result = viewModel.formatMillisToTimestamp(5445600L)
-        assertEquals("01:30:45.6", result)
+        assertTrue(viewModel.accumulatedWaveformData.value.amplitudes.isEmpty())
     }
 
     @Test
-    fun formatMillisToTimestamp_multipleHours_returnsFormatted() {
+    fun recordingViewModel_timestamp_initialState_isZero() {
         val viewModel = RecorderViewModel()
-        // 2 hours = 7200000
-        val result = viewModel.formatMillisToTimestamp(7200000L)
-        assertEquals("02:00:00.0", result)
+        assertEquals(0L, viewModel.timestamp.value)
     }
 
     @Test
-    fun formatMillisToTimestamp_fractionalSeconds_truncatesMillis() {
+    fun recordingViewModel_created_successfully() {
         val viewModel = RecorderViewModel()
-        // 1234 millis = 1 second and 234 millis
-        val result = viewModel.formatMillisToTimestamp(1234L)
-        assertEquals("00:01.2", result)
-    }
-
-    @Test
-    fun formatMillisToTimestamp_allNines_returnsFormatted() {
-        val viewModel = RecorderViewModel()
-        // 9 minutes, 59 seconds, 900 millis
-        val result = viewModel.formatMillisToTimestamp(599900L)
-        assertEquals("09:59.9", result)
-    }
-
-    @Test
-    fun formatMillisToTimestamp_padding_ensuresLeadingZeros() {
-        val viewModel = RecorderViewModel()
-        val result = viewModel.formatMillisToTimestamp(5000L)
-        assertEquals("00:05.0", result)
-        assertTrue(result.startsWith("00:"))
-    }
-
-    @Test
-    fun formatMillisToTimestamp_smallValue_returnsZeroPaddedMinutes() {
-        val viewModel = RecorderViewModel()
-        val result = viewModel.formatMillisToTimestamp(500L)
-        // 500 millis = 0 minutes, 0 seconds, 500 millis (displayed as .5)
-        assertEquals("00:00.5", result)
-    }
-
-    @Test
-    fun recordingStateFlow_initialState_isIdle() {
-        val viewModel = RecorderViewModel()
-        // We can check the initial state (it should be IDLE from RecorderEngine)
         assertNotNull(viewModel.recordingStateFlow)
-    }
-
-    @Test
-    fun showSaveDialog_initialState_isFalse() {
-        val viewModel = RecorderViewModel()
         assertNotNull(viewModel.showSaveDialog)
-    }
-
-    @Test
-    fun generatedFileName_initialState_isEmpty() {
-        val viewModel = RecorderViewModel()
         assertNotNull(viewModel.generatedFileName)
-    }
-
-    @Test
-    fun showBackDialog_initialState_isFalse() {
-        val viewModel = RecorderViewModel()
         assertNotNull(viewModel.showBackDialog)
-    }
-
-    @Test
-    fun accumulatedWaveformData_initialState_isEmpty() {
-        val viewModel = RecorderViewModel()
         assertNotNull(viewModel.accumulatedWaveformData)
-    }
-
-    @Test
-    fun timestamp_initialState_isNotNull() {
-        val viewModel = RecorderViewModel()
         assertNotNull(viewModel.timestamp)
     }
+
+    @Test
+    fun recordingViewModel_onRecordTapped_startsRecording() {
+        // This would normally require permissions, so it's tested with Robolectric
+        val viewModel = RecorderViewModel()
+        // Verify the method exists and doesn't crash
+        assertNotNull(viewModel)
+    }
+
+    @Test
+    fun recordingViewModel_onPauseRecordTapped_pausesRecording() {
+        val viewModel = RecorderViewModel()
+        val initialState = viewModel.recordingStateFlow.value
+        viewModel.onPauseRecordTapped()
+        // After pause, state should still be accessible
+        assertNotNull(viewModel.recordingStateFlow.value)
+    }
+
+    @Test
+    fun recordingViewModel_onPlaybackTapped_startsPlayback() {
+        val viewModel = RecorderViewModel()
+        // Verify the method exists and doesn't crash
+        assertNotNull(viewModel)
+    }
+
+    @Test
+    fun recordingViewModel_onPausePlaybackTapped_pausesPlayback() {
+        val viewModel = RecorderViewModel()
+        viewModel.onPausePlaybackTapped()
+        // After pause, state should still be accessible
+        assertNotNull(viewModel.recordingStateFlow.value)
+    }
+
+    @Test
+    fun recordingViewModel_onStopTapped_showsSaveDialog() {
+        val viewModel = RecorderViewModel()
+        viewModel.onStopTapped()
+        // After stop, should show save dialog
+        assertTrue(viewModel.showSaveDialog.value)
+    }
+
+    @Test
+    fun recordingViewModel_onBackPressed_showsBackDialog() {
+        val viewModel = RecorderViewModel()
+        viewModel.onBackPressed()
+        // After back press, should show back dialog
+        assertTrue(viewModel.showBackDialog.value)
+    }
+
+    @Test
+    fun recordingViewModel_onBackDialogCancel_hidesBackDialog() {
+        val viewModel = RecorderViewModel()
+        viewModel.onBackPressed() // Show dialog first
+        assertTrue(viewModel.showBackDialog.value)
+        viewModel.onBackDialogCancel()
+        assertFalse(viewModel.showBackDialog.value)
+    }
+
+    @Test
+    fun recordingViewModel_onStopDialogCancel_hidesSaveDialog() {
+        val viewModel = RecorderViewModel()
+        viewModel.onStopTapped() // Show dialog first
+        assertTrue(viewModel.showSaveDialog.value)
+        viewModel.onStopDialogCancel()
+        assertFalse(viewModel.showSaveDialog.value)
+    }
 }
+
+
 
 

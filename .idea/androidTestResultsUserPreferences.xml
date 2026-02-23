@@ -9,7 +9,21 @@
               <option name="preferredColumnWidths">
                 <map>
                   <entry key="Duration" value="90" />
+                  <entry key="Medium_Phone_API_36.1" value="120" />
                   <entry key="Solana Mobile Inc. Seeker" value="120" />
+                  <entry key="Tests" value="360" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
+        <entry key="397501989">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Medium_Phone_API_36.1" value="120" />
                   <entry key="Tests" value="360" />
                 </map>
               </option>
@@ -22,6 +36,7 @@
               <option name="preferredColumnWidths">
                 <map>
                   <entry key="Duration" value="90" />
+                  <entry key="Medium_Phone_API_36.1" value="120" />
                   <entry key="Solana Mobile Inc. Seeker" value="120" />
                   <entry key="Tests" value="360" />
                 </map>
@@ -35,7 +50,21 @@
               <option name="preferredColumnWidths">
                 <map>
                   <entry key="Duration" value="90" />
+                  <entry key="Medium_Phone_API_36.1" value="120" />
                   <entry key="Solana Mobile Inc. Seeker" value="120" />
+                  <entry key="Tests" value="360" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
+        <entry key="1805550449">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Medium_Phone_API_36.1" value="120" />
                   <entry key="Tests" value="360" />
                 </map>
               </option>

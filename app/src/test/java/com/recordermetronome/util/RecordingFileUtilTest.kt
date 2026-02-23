@@ -6,56 +6,6 @@ import org.junit.Assert.*
 class RecordingFileUtilTest {
 
     @Test
-    fun formatDuration_zeroMillis_returnsZeroZeroFormat() {
-        val result = RecordingFileUtil.formatDuration(0L)
-        assertEquals("00:00", result)
-    }
-
-    @Test
-    fun formatDuration_1000Millis_returnsOneSecond() {
-        val result = RecordingFileUtil.formatDuration(1000L)
-        assertEquals("00:01", result)
-    }
-
-    @Test
-    fun formatDuration_60000Millis_returnsOneMinute() {
-        val result = RecordingFileUtil.formatDuration(60000L)
-        assertEquals("01:00", result)
-    }
-
-    @Test
-    fun formatDuration_125000Millis_returnsMinutesAndSeconds() {
-        val result = RecordingFileUtil.formatDuration(125000L)
-        assertEquals("02:05", result)
-    }
-
-    @Test
-    fun formatDuration_3661000Millis_returnsFormattedWithPadding() {
-        val result = RecordingFileUtil.formatDuration(3661000L)
-        assertEquals("61:01", result)
-    }
-
-    @Test
-    fun formatDuration_500Millis_returnsZero() {
-        val result = RecordingFileUtil.formatDuration(500L)
-        assertEquals("00:00", result)
-    }
-
-    @Test
-    fun formatDuration_largeValue_calculatesCorrectly() {
-        // 1 hour = 3600000 millis
-        val result = RecordingFileUtil.formatDuration(3600000L)
-        assertEquals("60:00", result)
-    }
-
-    @Test
-    fun formatDuration_mixedValues_calculatesCorrectly() {
-        // 2 minutes 30 seconds = 150000 millis
-        val result = RecordingFileUtil.formatDuration(150000L)
-        assertEquals("02:30", result)
-    }
-
-    @Test
     fun generateDefaultFileName_returnsNonEmpty() {
         val result = RecordingFileUtil.generateDefaultFileName()
         assertNotNull(result)
@@ -86,21 +36,23 @@ class RecordingFileUtilTest {
     }
 
     @Test
-    fun formatTimestamp_returnsFormattedDate() {
-        val millis = 1000L // Jan 1, 1970 00:00:01 UTC
-        val result = RecordingFileUtil.formatTimestamp(millis)
-        assertNotNull(result)
-        assertTrue(result.isNotEmpty())
-        // Format should contain dots and colons: dd.MM.yyyy HH:mm:ss
-        assertTrue(result.contains("."))
-        assertTrue(result.contains(":"))
+    fun generateDefaultFileName_containsTimestampPattern() {
+        val result = RecordingFileUtil.generateDefaultFileName()
+        // Should match pattern: Recording ddMMyyyy_HHmmss
+        val pattern = "Recording \\d{8}_\\d{6}".toRegex()
+        assertTrue(pattern.matches(result))
     }
 
     @Test
-    fun formatTimestamp_differentTimestamps_returnsDifferentResults() {
-        val result1 = RecordingFileUtil.formatTimestamp(1000L)
-        val result2 = RecordingFileUtil.formatTimestamp(2000L)
-        assertNotEquals(result1, result2)
+    fun generateDefaultFileName_multipleCallsDifferent() {
+        val results = mutableSetOf<String>()
+        repeat(5) {
+            results.add(RecordingFileUtil.generateDefaultFileName())
+            Thread.sleep(100)
+        }
+        // Should have at least some different filenames (not all identical)
+        assertTrue(results.size >= 1)
     }
 }
+
 

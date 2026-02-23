@@ -5,10 +5,10 @@
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="FileExplorerViewModelInstrumentedTest">
+      <SelectionState runConfigName="Tests in 'com.recordermetronome'">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="Tests in 'com.recordermetronome'">
+      <SelectionState runConfigName="Tests in 'com.recordermetronome.RecordingFileUtilInstrumentedTest'">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
