@@ -109,4 +109,10 @@ class PlaybackViewModel : ViewModel() {
         super.onCleared()
         engine.finalize { }
     }
+
+    fun onReturnToFileExplorer(callback: () -> Unit) {
+        this.engine.finalize {
+            callback()
+        }
+    }
 }

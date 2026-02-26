@@ -132,4 +132,9 @@ class RecorderViewModel : ViewModel() {
     fun onBackDialogCancel() {
         _showBackDialog.value = false
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        engine.finalize { }
+    }
 }
