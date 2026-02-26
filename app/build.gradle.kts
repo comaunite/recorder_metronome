@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.recordermetronome"
+    namespace = "com.recorder"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.recordermetronome"
+        applicationId = "com.recorder"
         minSdk = 29
         targetSdk = 36
         versionCode = 1

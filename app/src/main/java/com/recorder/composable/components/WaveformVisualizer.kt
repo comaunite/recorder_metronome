@@ -1,0 +1,94 @@
+package com.recorder.composable.components
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.recorder.data.WaveformData
+import kotlin.math.abs
+
+@Composable
+fun WaveformVisualizer(
+    waveformData: WaveformData,
+    modifier: Modifier = Modifier,
+    waveColor: Color = MaterialTheme.colorScheme.primary,
+    backgroundColor: Color = MaterialTheme.colorScheme.background
+) {
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(150.dp)
+    ) {
+        drawRect(color = backgroundColor)
+
+        val amplitudes = waveformData.amplitudes
+        val currentPosition = waveformData.currentPosition
+
+        val width = size.width
+        val height = size.height
+        val centerY = height / 2f
+        val centerX = width / 2f
+
+        // Draw the center line
+        drawLine(
+            color = waveColor.copy(alpha = 0.2f),
+            start = Offset(0f, centerY),
+            end = Offset(width, centerY),
+            strokeWidth = 1f
+        )
+
+        if (!amplitudes.isEmpty()) {
+            val maxAmplitude = waveformData.maxAmplitude.coerceAtLeast(1f)
+            val barWidth = 1.dp.toPx() // Fixed thin bar width
+            val barSpacing = 1.dp.toPx() // Fixed spacing
+            val barFullWidth = barWidth + barSpacing
+
+            // Calculate which bars to draw based on current position
+            // The current position should be at centerX
+            val barsToLeft = (centerX / barFullWidth).toInt()
+            val barsToRight = ((width - centerX) / barFullWidth).toInt()
+
+            val startIndex = (currentPosition - barsToLeft).coerceAtLeast(0)
+            val endIndex = (currentPosition + barsToRight).coerceAtMost(amplitudes.size - 1)
+
+            // Draw amplitude bars only if we have a valid range
+            if (startIndex <= endIndex) {
+                for (i in startIndex..endIndex) {
+                    val amplitude = amplitudes[i]
+                    val normalized = (abs(amplitude) / maxAmplitude).coerceIn(0f, 1f)
+                    val barHeight = (height / 2) * normalized
+
+                    // Calculate x position relative to current position
+                    val offsetFromCurrent = i - currentPosition
+                    val xPosition = centerX + (offsetFromCurrent * barFullWidth)
+
+                    drawRect(
+                        color = waveColor,
+                        topLeft = Offset(
+                            xPosition,
+                            centerY - barHeight / 2
+                        ),
+                        size = Size(
+                            barWidth.coerceAtLeast(1f),
+                            barHeight.coerceAtLeast(1f)
+                        )
+                    )
+                }
+            }
+        }
+
+        // Draw red playback line on top
+        drawLine(
+            color = Color.Red,
+            start = Offset(centerX, 0f),
+            end = Offset(centerX, height),
+            strokeWidth = 3f
+        )
+    }
+}
