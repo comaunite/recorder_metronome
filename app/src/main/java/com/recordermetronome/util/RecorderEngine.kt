@@ -6,6 +6,7 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
+import android.media.PlaybackParams
 import androidx.annotation.RequiresPermission
 import com.recordermetronome.data.ParsedAudioData
 import com.recordermetronome.data.PlaybackPosition
@@ -15,10 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.ByteArrayOutputStream
-import kotlin.collections.addAll
 import kotlin.math.abs
-import kotlin.text.clear
-import kotlin.text.toLong
 
 enum class RecordingState {
     IDLE, RECORDING, PAUSED, PLAYBACK
@@ -55,6 +53,9 @@ class RecorderEngine {
     val playbackPositionStateFlow: StateFlow<PlaybackPosition> = playbackPosition.asStateFlow()
     private val repeatPlaybackEnabled = MutableStateFlow(false)
     val repeatPlaybackEnabledFlow: StateFlow<Boolean> = repeatPlaybackEnabled.asStateFlow()
+
+    private val playbackSpeed = MutableStateFlow(1.0f)
+    val playbackSpeedFlow: StateFlow<Float> = playbackSpeed.asStateFlow()
 
     private val timestamp = MutableStateFlow(0L)
     val timestampStateFlow = timestamp.asStateFlow()
@@ -143,6 +144,19 @@ class RecorderEngine {
         repeatPlaybackEnabled.value = !repeatPlaybackEnabled.value
     }
 
+    fun setPlaybackSpeed(speed: Float) {
+        playbackSpeed.value = speed
+        if (recordingState.value == RecordingState.PLAYBACK) {
+            try {
+                audioTrack?.playbackParams = PlaybackParams().apply {
+                    this.speed = speed
+                }
+            } catch (e: Exception) {
+                println("PLAYBACK: Failed to update speed: ${e.message}")
+            }
+        }
+    }
+
     fun playBackCurrentStream() {
         if (recordingState.value == RecordingState.RECORDING) {
             println("PLAYBACK: Recording is active, pausing recording...")
@@ -198,8 +212,6 @@ class RecorderEngine {
                     .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                     .build()
 
-                val totalDurationMs = (audioBytes.size / (sampleRate * 2f) * 1000).toLong()
-
                 while (recordingState.value == RecordingState.PLAYBACK) {
                     val startPositionBytes = ((pausedPlaybackPosition / 1000f) * sampleRate * 2).toInt()
                         .coerceIn(0, audioBytes.size)
@@ -214,6 +226,10 @@ class RecorderEngine {
                     println("PLAYBACK: AudioTrack state=${audioTrack?.state}, playState=${audioTrack?.playState}")
                     println("PLAYBACK: Buffer size=${audioBytes.size}, Sample rate=$sampleRate")
 
+                    audioTrack?.playbackParams = PlaybackParams().apply {
+                        this.speed = playbackSpeed.value
+                    }
+
                     val bytesToWrite = audioBytes.size - startPositionBytes
                     var finishedNaturally = false
 
@@ -227,13 +243,18 @@ class RecorderEngine {
                         println("PLAYBACK: Play called, playState=${audioTrack?.playState}")
 
                         val durationMs = (bytesToWrite.toFloat() / (sampleRate * 2)) * 1000
-                        val startTime = System.currentTimeMillis()
+                        var lastProgressUpdate = System.currentTimeMillis()
+                        var playTimeMs = 0f
 
                         while (recordingState.value == RecordingState.PLAYBACK) {
-                            val elapsed = System.currentTimeMillis() - startTime
-                            pausedPlaybackPosition =
-                                (startPositionBytes / (sampleRate * 2f) * 1000).toLong() + elapsed
-
+                            val now = System.currentTimeMillis()
+                            val delta = now - lastProgressUpdate
+                            lastProgressUpdate = now
+                            
+                            // Track how much audio (at 1x speed) has been played
+                            playTimeMs += delta * playbackSpeed.value
+                            
+                            pausedPlaybackPosition = ((startPositionBytes / (sampleRate * 2f) * 1000).toLong() + playTimeMs).toLong()
                             timestamp.value = pausedPlaybackPosition
 
                             // Emit ONLY the current position index, not the entire waveform
@@ -243,7 +264,7 @@ class RecorderEngine {
 
                             playbackPosition.value = PlaybackPosition(currentIndex = currentPosIndex)
 
-                            if (elapsed >= durationMs) {
+                            if (playTimeMs >= durationMs) {
                                 println("PLAYBACK: Reached end of audio")
                                 finishedNaturally = true
                                 break
@@ -382,6 +403,7 @@ class RecorderEngine {
         totalProcessedBytes = 0L
         waveformData.value = WaveformData() // Clear waveform
         timestamp.value = 0L
+        playbackSpeed.value = 1.0f
 
         cleanupRecorder()
 
@@ -423,6 +445,7 @@ class RecorderEngine {
             lastWaveformProcessedBytes = data.audioData.size.toLong()
             recordingState.value = RecordingState.PAUSED
             timestamp.value = 0L
+            playbackSpeed.value = 1.0f
 
             // Emit waveform data
             waveformData.value = WaveformData(

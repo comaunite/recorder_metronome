@@ -23,6 +23,7 @@ class PlaybackViewModel : ViewModel() {
 
     val timestamp = engine.timestampStateFlow
     val repeatPlaybackEnabled = engine.repeatPlaybackEnabledFlow
+    val playbackSpeed = engine.playbackSpeedFlow
 
     private val _currentRecording = MutableStateFlow<RecordingFile?>(null)
     val currentRecording = _currentRecording.asStateFlow()
@@ -104,6 +105,7 @@ class PlaybackViewModel : ViewModel() {
     fun onPlaybackTapped() = engine.playBackCurrentStream()
     fun onPausePlaybackTapped() = engine.pause()
     fun onRepeatToggleTapped() = engine.toggleRepeatPlayback()
+    fun onPlaybackSpeedTapped(speed: Float) = engine.setPlaybackSpeed(speed)
 
     override fun onCleared() {
         super.onCleared()

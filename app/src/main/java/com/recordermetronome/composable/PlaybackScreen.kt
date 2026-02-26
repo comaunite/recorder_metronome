@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordermetronome.composable.components.PauseButtonBig
 import com.recordermetronome.composable.components.PlayButtonBig
+import com.recordermetronome.composable.components.PlaybackSpeedButton
 import com.recordermetronome.composable.components.RepeatToggleButtonSmall
 import com.recordermetronome.composable.components.WaveformVisualizer
 import com.recordermetronome.composable.dialogs.DeleteRecordingDialog
@@ -59,6 +60,7 @@ fun PlaybackScreen(
     val waveformData by viewModel.accumulatedWaveformData.collectAsStateWithLifecycle()
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
     val repeatEnabled by viewModel.repeatPlaybackEnabled.collectAsStateWithLifecycle()
+    val playbackSpeed by viewModel.playbackSpeed.collectAsStateWithLifecycle()
     val currentRecording by viewModel.currentRecording.collectAsStateWithLifecycle()
     val existingRecordings by viewModel.existingRecordings.collectAsStateWithLifecycle()
 
@@ -210,7 +212,7 @@ fun PlaybackScreen(
 
             // Playback control buttons
             Row(
-                modifier = modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -218,23 +220,19 @@ fun PlaybackScreen(
                     RecordingState.IDLE,
                     RecordingState.RECORDING,
                     RecordingState.PAUSED -> {
-                        Spacer(modifier = Modifier)
+                        PlaybackSpeedButton(playbackSpeed) { viewModel.onPlaybackSpeedTapped(it) }
 
                         PlayButtonBig(true, { viewModel.onPlaybackTapped() })
 
                         RepeatToggleButtonSmall(repeatEnabled) { viewModel.onRepeatToggleTapped() }
-
-                        Spacer(modifier = Modifier)
                     }
 
                     RecordingState.PLAYBACK -> {
-                        Spacer(modifier = Modifier)
+                        PlaybackSpeedButton(playbackSpeed) { viewModel.onPlaybackSpeedTapped(it) }
 
                         PauseButtonBig({ viewModel.onPausePlaybackTapped() })
 
                         RepeatToggleButtonSmall(repeatEnabled) { viewModel.onRepeatToggleTapped() }
-
-                        Spacer(modifier = Modifier)
                     }
                 }
             }

@@ -1,19 +1,26 @@
 package com.recordermetronome.composable.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOn
-import androidx.compose.material.icons.filled.ToggleOff
-import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -205,5 +212,39 @@ fun RepeatToggleButtonSmall(isEnabled: Boolean, onClick: () -> Unit) {
             modifier = Modifier.size(28.dp),
             tint = MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+@Composable
+fun PlaybackSpeedButton(currentSpeed: Float, onSpeedSelected: (Float) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val speeds = listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
+
+    Box {
+        TextButton(
+            onClick = { expanded = true },
+            modifier = Modifier.size(56.dp)
+        ) {
+            Text(
+                text = "${currentSpeed}x",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            speeds.forEach { speed ->
+                DropdownMenuItem(
+                    text = { Text("${speed}x") },
+                    onClick = {
+                        onSpeedSelected(speed)
+                        expanded = false
+                    }
+                )
+            }
+        }
     }
 }
