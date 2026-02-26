@@ -66,7 +66,7 @@ fun PlaybackScreen(
     val formattedTimestamp = remember(timestamp) { FormattingHelper.formatDurationWithMs(timestamp) }
     val formattedDuration = remember(activeRecording.durationMs) { FormattingHelper.formatDuration(activeRecording.durationMs) }
 
-    BackHandler { viewModel.onReturnToFileExplorer(onNavigateBack()) }
+    BackHandler { viewModel.onReturnToFileExplorer(onNavigateBack) }
 
     var menuExpanded by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -84,7 +84,7 @@ fun PlaybackScreen(
             onDelete = {
                 fileExplorerViewModel.deleteRecording(context, activeRecording)
                 showDeleteDialog = false
-                viewModel.onReturnToFileExplorer(onNavigateBack())
+                viewModel.onReturnToFileExplorer(onNavigateBack)
             },
             onCancel = { showDeleteDialog = false }
         )
@@ -115,7 +115,7 @@ fun PlaybackScreen(
         TopAppBar(
             title = { Text("Playback") },
             navigationIcon = {
-                IconButton(onClick = { viewModel.onReturnToFileExplorer(onNavigateBack()) }) {
+                IconButton(onClick = { viewModel.onReturnToFileExplorer(onNavigateBack) }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back to recordings"
