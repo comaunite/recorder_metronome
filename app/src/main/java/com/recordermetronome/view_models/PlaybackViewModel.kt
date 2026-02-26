@@ -22,6 +22,7 @@ class PlaybackViewModel : ViewModel() {
     val accumulatedWaveformData = _accumulatedWaveformData.asStateFlow()
 
     val timestamp = engine.timestampStateFlow
+    val repeatPlaybackEnabled = engine.repeatPlaybackEnabledFlow
 
     private val _currentRecording = MutableStateFlow<RecordingFile?>(null)
     val currentRecording = _currentRecording.asStateFlow()
@@ -102,10 +103,7 @@ class PlaybackViewModel : ViewModel() {
 
     fun onPlaybackTapped() = engine.playBackCurrentStream()
     fun onPausePlaybackTapped() = engine.pause()
-
-    fun onStopTapped() {
-        // TODO: Reset current position to 0 and stop playback, enter IDLE state
-    }
+    fun onRepeatToggleTapped() = engine.toggleRepeatPlayback()
 
     override fun onCleared() {
         super.onCleared()

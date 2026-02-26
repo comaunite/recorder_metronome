@@ -4,6 +4,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOn
+import androidx.compose.material.icons.filled.ToggleOff
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -107,7 +111,21 @@ fun RecordButton(enabled: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun PauseRecordButton(onClick: () -> Unit) {
+fun PauseButtonSmall(onClick: () -> Unit) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.size(56.dp)
+    ) {
+        PauseIcon(
+            modifier = Modifier.size(26.dp),
+            tint = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+
+@Composable
+fun PauseButtonBig(onClick: () -> Unit) {
     FilledTonalIconButton(
         onClick = onClick,
         modifier = Modifier.size(80.dp),
@@ -121,11 +139,10 @@ fun PauseRecordButton(onClick: () -> Unit) {
             tint = MaterialTheme.colorScheme.onSurface
         )
     }
-
 }
 
 @Composable
-fun PlayButton(enabled: Boolean, onClick: () -> Unit) {
+fun PlayButtonSmall(enabled: Boolean, onClick: () -> Unit) {
     IconButton(
         onClick = onClick,
         modifier = Modifier.size(56.dp),
@@ -147,13 +164,45 @@ fun PlayButton(enabled: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun PausePlaybackButton(onClick: () -> Unit) {
+fun PlayButtonBig(enabled: Boolean, onClick: () -> Unit) {
+    FilledTonalIconButton(
+        onClick = onClick,
+        modifier = Modifier.size(80.dp),
+        enabled = enabled,
+        colors = IconButtonDefaults.filledTonalIconButtonColors(
+            containerColor = Color.White,
+            contentColor = Color.DarkGray,
+            disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.38f),
+            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        )
+    ) {
+        val tint = if (enabled) {
+            Color.Black
+        } else {
+            Color.Black.copy(alpha = 0.38f)
+        }
+
+        Icon(
+            imageVector = Icons.Filled.PlayArrow,
+            contentDescription = "Play",
+            modifier = Modifier.size(70.dp),
+            tint = tint
+        )
+    }
+}
+
+@Composable
+fun RepeatToggleButtonSmall(isEnabled: Boolean, onClick: () -> Unit) {
     IconButton(
         onClick = onClick,
         modifier = Modifier.size(56.dp)
     ) {
-        PauseIcon(
-            modifier = Modifier.size(26.dp),
+        val icon = if (isEnabled) Icons.Filled.RepeatOn else Icons.Filled.Repeat
+        val contentDescription = if (isEnabled) "Repeat on" else "Repeat off"
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(28.dp),
             tint = MaterialTheme.colorScheme.onSurface
         )
     }

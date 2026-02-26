@@ -29,12 +29,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordermetronome.util.RecordingState
-import com.recordermetronome.composable.components.PausePlaybackButton
-import com.recordermetronome.composable.components.PauseRecordButton
+import com.recordermetronome.composable.components.PauseButtonSmall
+import com.recordermetronome.composable.components.PauseButtonBig
 import com.recordermetronome.composable.dialogs.ExitRecordingDialog
 import com.recordermetronome.composable.dialogs.StopRecordingDialog
 import com.recordermetronome.util.RecordingFileUtil
-import com.recordermetronome.composable.components.PlayButton
+import com.recordermetronome.composable.components.PlayButtonSmall
 import com.recordermetronome.composable.components.RecordButton
 import com.recordermetronome.composable.components.StopButton
 import com.recordermetronome.composable.components.WaveformVisualizer
@@ -123,7 +123,7 @@ fun RecorderScreen(
             ) {
                 when (state) {
                     RecordingState.IDLE -> {
-                        PlayButton(false, {})
+                        PlayButtonSmall(false, {})
 
                         RecordButton(true, { handleRecordAction() })
 
@@ -131,15 +131,15 @@ fun RecorderScreen(
                     }
 
                     RecordingState.RECORDING -> {
-                        PlayButton(false, {})
+                        PlayButtonSmall(false, {})
 
-                        PauseRecordButton({ viewModel.onPauseRecordTapped() })
+                        PauseButtonBig({ viewModel.onPauseRecordTapped() })
 
                         StopButton(true, { viewModel.onStopTapped() })
                     }
 
                     RecordingState.PAUSED -> {
-                        PlayButton(true, { viewModel.onPlaybackTapped() })
+                        PlayButtonSmall(true, { viewModel.onPlaybackTapped() })
 
                         RecordButton(true, { handleRecordAction() })
 
@@ -147,7 +147,7 @@ fun RecorderScreen(
                     }
 
                     RecordingState.PLAYBACK -> {
-                        PausePlaybackButton({ viewModel.onPausePlaybackTapped() })
+                        PauseButtonSmall({ viewModel.onPausePlaybackTapped() })
 
                         RecordButton(false, {})
 
