@@ -49,9 +49,14 @@ fun PlaybackScreen(
 ) {
     val context = LocalContext.current
 
-    // Load the recording when screen is first displayed
-    LaunchedEffect(recorderFile, preLoadedRecordings) {
+    // Load the recording when screen is first displayed or when the selected file changes.
+    LaunchedEffect(recorderFile) {
         viewModel.initialize(context, recorderFile, preLoadedRecordings)
+    }
+
+    // Refresh the recordings list without resetting the current playback state.
+    LaunchedEffect(preLoadedRecordings) {
+        preLoadedRecordings?.let { viewModel.setExistingRecordings(it) }
     }
 
     BackHandler { viewModel.onReturnToFileExplorer(onNavigateBack) }

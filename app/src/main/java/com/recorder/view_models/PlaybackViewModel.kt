@@ -73,12 +73,16 @@ class PlaybackViewModel : ViewModel() {
         println("PLAYBACK_VM: Audio file loading completed")
 
         if (preLoadedRecordings != null) {
-            _existingRecordings.value = preLoadedRecordings
+            setExistingRecordings(preLoadedRecordings)
         } else {
             viewModelScope.launch(Dispatchers.IO) {
                 _existingRecordings.value = RecorderFileUtil.getRecorderFiles(context)
             }
         }
+    }
+
+    fun setExistingRecordings(recordings: List<RecorderFile>) {
+        _existingRecordings.value = recordings
     }
 
     fun updateInMemoryCollections(oldRecording: RecorderFile, newName: String) {
