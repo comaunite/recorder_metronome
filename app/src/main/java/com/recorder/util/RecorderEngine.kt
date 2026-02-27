@@ -460,4 +460,38 @@ class RecorderEngine {
             e.printStackTrace()
         }
     }
+
+    fun seekToWaveformIndex(targetIndex: Int) {
+        val state = recordingState.value
+        if (state != RecordingState.PAUSED && state != RecordingState.PLAYBACK) {
+            return
+        }
+
+        val amplitudes = waveformData.value.amplitudes
+        if (amplitudes.isEmpty()) {
+            return
+        }
+
+        val clampedIndex = targetIndex.coerceIn(0, amplitudes.size - 1)
+        val totalDurationMs = ((recordedData.size() / (sampleRate * 2f)) * 1000).toLong()
+        val newPositionMs = if (amplitudes.size <= 1 || totalDurationMs <= 0L) {
+            0L
+        } else {
+            ((clampedIndex.toFloat() / (amplitudes.size - 1)) * totalDurationMs).toLong()
+        }
+
+        val wasPlaying = state == RecordingState.PLAYBACK
+        if (wasPlaying) {
+            pause()
+        }
+
+        pausedPlaybackPosition = newPositionMs
+        timestamp.value = newPositionMs
+        waveformData.value = waveformData.value.copy(currentPosition = clampedIndex)
+        playbackPosition.value = PlaybackPosition(currentIndex = clampedIndex)
+
+        if (wasPlaying) {
+            playBackCurrentStream()
+        }
+    }
 }

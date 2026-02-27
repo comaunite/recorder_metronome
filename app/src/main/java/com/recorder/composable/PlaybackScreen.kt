@@ -69,6 +69,7 @@ fun PlaybackScreen(
     val existingRecordings by viewModel.existingRecordings.collectAsStateWithLifecycle()
 
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
+    val canScrub = state == RecordingState.PAUSED || state == RecordingState.IDLE || state == RecordingState.PLAYBACK
 
     Column(
         modifier = modifier.fillMaxSize()
@@ -127,7 +128,9 @@ fun PlaybackScreen(
                 waveformData = waveformData,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp)
+                    .height(150.dp),
+                enableScrubbing = canScrub,
+                onScrubPosition = if (canScrub) ({ viewModel.onWaveformScrubbed(it) }) else null
             )
 
             Spacer(modifier = Modifier.height(32.dp))

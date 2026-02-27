@@ -110,6 +110,7 @@ class PlaybackViewModel : ViewModel() {
     fun onPausePlaybackTapped() = engine.pause()
     fun onRepeatToggleTapped() = engine.toggleRepeatPlayback()
     fun onPlaybackSpeedTapped(speed: Float) = engine.setPlaybackSpeed(speed)
+    fun onWaveformScrubbed(targetIndex: Int) = engine.seekToWaveformIndex(targetIndex)
 
     override fun onCleared() {
         super.onCleared()

@@ -87,6 +87,7 @@ class RecorderViewModel : ViewModel() {
 
     fun onPlaybackTapped() = engine.playBackCurrentStream()
     fun onPausePlaybackTapped() = engine.pause()
+    fun onWaveformScrubbed(targetIndex: Int) = engine.seekToWaveformIndex(targetIndex)
 
     fun onStopTapped() {
         engine.pause()
