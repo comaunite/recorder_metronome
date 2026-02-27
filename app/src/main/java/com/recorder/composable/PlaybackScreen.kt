@@ -19,7 +19,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -30,9 +29,9 @@ import com.recorder.composable.components.PauseButtonBig
 import com.recorder.composable.components.PlayButtonBig
 import com.recorder.composable.components.PlaybackSpeedButton
 import com.recorder.composable.components.RepeatToggleButtonSmall
+import com.recorder.composable.components.TimestampDisplay
 import com.recorder.composable.components.WaveformVisualizer
 import com.recorder.data.RecorderFile
-import com.recorder.util.FormattingHelper
 import com.recorder.util.RecordingState
 import com.recorder.view_models.FileExplorerViewModel
 import com.recorder.view_models.PlaybackViewModel
@@ -70,8 +69,6 @@ fun PlaybackScreen(
     val existingRecordings by viewModel.existingRecordings.collectAsStateWithLifecycle()
 
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
-    val formattedTimestamp = remember(timestamp) { FormattingHelper.formatDurationWithMs(timestamp) }
-    val formattedDuration = remember(currentRecording.durationMs) { FormattingHelper.formatDuration(currentRecording.durationMs) }
 
     Column(
         modifier = modifier.fillMaxSize()
@@ -118,32 +115,10 @@ fun PlaybackScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Timestamp and duration
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.CenterHorizontally),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = formattedTimestamp,
-                    style = MaterialTheme.typography.displayLarge,
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                .fillMaxWidth()
-                    .align(Alignment.CenterHorizontally),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = formattedDuration,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
+            TimestampDisplay(
+                timestampMs = timestamp,
+                durationMs = currentRecording.durationMs
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 

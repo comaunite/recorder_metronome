@@ -14,7 +14,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -38,9 +37,9 @@ import com.recorder.composable.components.PlayButtonSmall
 import com.recorder.composable.components.RecordButton
 import com.recorder.composable.components.StopButton
 import com.recorder.composable.components.WaveformVisualizer
-import com.recorder.util.FormattingHelper
 import com.recorder.util.ensureRecordingAudioPermissions
 import com.recorder.view_models.RecorderViewModel
+import com.recorder.composable.components.TimestampDisplay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,7 +53,6 @@ fun RecorderScreen(
     val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
     val waveformData by viewModel.accumulatedWaveformData.collectAsStateWithLifecycle()
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
-    val formattedTimestamp = remember(timestamp) { FormattingHelper.formatDurationWithMs(timestamp) }
 
     var existingRecordings by remember { mutableStateOf(preLoadedRecordings ?: emptyList()) }
     var shouldLoadRecordings by remember { mutableStateOf(preLoadedRecordings == null) }
@@ -103,10 +101,8 @@ fun RecorderScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Timestamp Tracker
-            Text(
-                text = formattedTimestamp,
-                style = MaterialTheme.typography.displayLarge,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+            TimestampDisplay(
+                timestampMs = timestamp
             )
 
             Spacer(modifier = Modifier.height(32.dp))
