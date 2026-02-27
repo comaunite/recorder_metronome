@@ -11,13 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -33,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.recorder.composable.components.MoreOptionsMenu
 import com.recorder.composable.components.RecordButton
 import com.recorder.composable.dialogs.DeleteRecordingDialog
 import com.recorder.composable.dialogs.RenameRecordingDialog
@@ -117,7 +112,6 @@ fun RecorderFileItem(
     onPlayRecording: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    var menuExpanded by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
     var renameText by remember { mutableStateOf(recording.name) }
@@ -143,9 +137,7 @@ fun RecorderFileItem(
                 showRenameDialog = false
             },
             onRenameTextChange = { renameText = it },
-            onCancel = {
-                showRenameDialog = false
-            }
+            onCancel = { showRenameDialog = false }
         )
     }
 
@@ -208,41 +200,18 @@ fun RecorderFileItem(
             }
         }
 
-        // Three-dot menu on the right with 2-row row span
-        Box {
-            IconButton(onClick = { menuExpanded = true }) {
-                Icon(
-                    imageVector = Icons.Filled.MoreVert,
-                    contentDescription = "More options"
-                )
+        // Three-dot menu on the right
+        MoreOptionsMenu(
+            onRename = {
+                renameText = recording.name
+                showRenameDialog = true
+            },
+            onDelete = {
+                showDeleteDialog = true
+            },
+            onShare = {
+                RecorderFileUtil.shareRecording(context, recording)
             }
-            DropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { menuExpanded = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Rename") },
-                    onClick = {
-                        menuExpanded = false
-                        renameText = recording.name
-                        showRenameDialog = true
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Delete") },
-                    onClick = {
-                        menuExpanded = false
-                        showDeleteDialog = true
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Share") },
-                    onClick = {
-                        menuExpanded = false
-                        RecorderFileUtil.shareRecording(context, recording)
-                    }
-                )
-            }
-        }
+        )
     }
 }

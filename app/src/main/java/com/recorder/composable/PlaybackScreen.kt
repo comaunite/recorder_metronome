@@ -2,7 +2,6 @@ package com.recorder.composable
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,9 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.recorder.composable.components.MoreOptionsMenu
 import com.recorder.composable.components.PauseButtonBig
 import com.recorder.composable.components.PlayButtonBig
 import com.recorder.composable.components.PlaybackSpeedButton
@@ -70,7 +67,6 @@ fun PlaybackScreen(
 
     BackHandler { viewModel.onReturnToFileExplorer(onNavigateBack) }
 
-    var menuExpanded by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
     var renameText by remember { mutableStateOf(activeRecording.name) }
@@ -125,41 +121,18 @@ fun PlaybackScreen(
                 }
             },
             actions = {
-                Box {
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(
-                            imageVector = Icons.Filled.MoreVert,
-                            contentDescription = "More options"
-                        )
+                MoreOptionsMenu(
+                    onRename = {
+                        renameText = activeRecording.name
+                        showRenameDialog = true
+                    },
+                    onDelete = {
+                        showDeleteDialog = true
+                    },
+                    onShare = {
+                        RecorderFileUtil.shareRecording(context, activeRecording)
                     }
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Rename") },
-                            onClick = {
-                                menuExpanded = false
-                                renameText = activeRecording.name
-                                showRenameDialog = true
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Delete") },
-                            onClick = {
-                                menuExpanded = false
-                                showDeleteDialog = true
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Share") },
-                            onClick = {
-                                menuExpanded = false
-                                RecorderFileUtil.shareRecording(context, activeRecording)
-                            }
-                        )
-                    }
-                }
+                )
             }
         )
 
