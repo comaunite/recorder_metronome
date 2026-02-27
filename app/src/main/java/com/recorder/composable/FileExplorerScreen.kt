@@ -19,9 +19,7 @@ import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,11 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recorder.composable.components.MoreOptionsMenu
 import com.recorder.composable.components.RecordButton
-import com.recorder.composable.dialogs.DeleteRecordingDialog
-import com.recorder.composable.dialogs.RenameRecordingDialog
 import com.recorder.data.RecorderFile
 import com.recorder.util.FormattingHelper
-import com.recorder.util.RecorderFileUtil
 import com.recorder.view_models.FileExplorerViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,7 +80,7 @@ fun FileExplorerScreen(
                             recording,
                             recordings,
                             viewModel,
-                            onPlayRecording = { onPlayRecording(recording) }
+                            onTap = { onPlayRecording(recording) }
                         )
                     }
                 }
@@ -108,38 +103,10 @@ fun FileExplorerScreen(
 fun RecorderFileItem(
     recording: RecorderFile,
     recordings: List<RecorderFile>,
-    fileExplorerViewModel: FileExplorerViewModel = remember { FileExplorerViewModel() },
-    onPlayRecording: () -> Unit = {}
+    viewModel: FileExplorerViewModel = remember { FileExplorerViewModel() },
+    onTap: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var showRenameDialog by remember { mutableStateOf(false) }
-    var renameText by remember { mutableStateOf(recording.name) }
-
-    if (showDeleteDialog) {
-        DeleteRecordingDialog(
-            recordingName = recording.name,
-            onDelete = {
-                fileExplorerViewModel.deleteRecording(context, recording)
-                showDeleteDialog = false
-            },
-            onCancel = { showDeleteDialog = false }
-        )
-    }
-
-    if (showRenameDialog) {
-        RenameRecordingDialog(
-            currentRecording = recording,
-            existingRecordings = recordings,
-            renameText = renameText,
-            onRename = { newName ->
-                fileExplorerViewModel.renameRecording(context, recording, newName)
-                showRenameDialog = false
-            },
-            onRenameTextChange = { renameText = it },
-            onCancel = { showRenameDialog = false }
-        )
-    }
 
     Row(
         modifier = Modifier
@@ -148,7 +115,7 @@ fun RecorderFileItem(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(bounded = true),
-                onClick = { onPlayRecording() }
+                onClick = { onTap() }
             ),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -202,16 +169,15 @@ fun RecorderFileItem(
 
         // Three-dot menu on the right
         MoreOptionsMenu(
-            onRename = {
-                renameText = recording.name
-                showRenameDialog = true
+            context = context,
+            recording = recording,
+            existingRecordings = recordings,
+            onRenameSuccess = { _ ->
+                viewModel.loadRecordings(context)
             },
-            onDelete = {
-                showDeleteDialog = true
+            onDeleteSuccess = {
+                viewModel.loadRecordings(context)
             },
-            onShare = {
-                RecorderFileUtil.shareRecording(context, recording)
-            }
         )
     }
 }

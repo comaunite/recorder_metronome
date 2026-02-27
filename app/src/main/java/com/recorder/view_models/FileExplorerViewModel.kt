@@ -19,21 +19,5 @@ class FileExplorerViewModel : ViewModel() {
             _recordings.value = recorderFiles
         }
     }
-
-    fun deleteRecording(context: Context, recording: RecorderFile) {
-        viewModelScope.launch {
-            RecorderFileUtil.deleteRecording(recording)
-            // Reload recordings after deletion
-            loadRecordings(context)
-        }
-    }
-
-    fun renameRecording(context: Context, recording: RecorderFile, newName: String) {
-        viewModelScope.launch {
-            RecorderFileUtil.renameRecording(recording, newName)
-            // Reload recordings after rename
-            loadRecordings(context)
-        }
-    }
 }
 

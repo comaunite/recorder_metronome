@@ -19,9 +19,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,11 +31,8 @@ import com.recorder.composable.components.PlayButtonBig
 import com.recorder.composable.components.PlaybackSpeedButton
 import com.recorder.composable.components.RepeatToggleButtonSmall
 import com.recorder.composable.components.WaveformVisualizer
-import com.recorder.composable.dialogs.DeleteRecordingDialog
-import com.recorder.composable.dialogs.RenameRecordingDialog
 import com.recorder.data.RecorderFile
 import com.recorder.util.FormattingHelper
-import com.recorder.util.RecorderFileUtil
 import com.recorder.util.RecordingState
 import com.recorder.view_models.FileExplorerViewModel
 import com.recorder.view_models.PlaybackViewModel
@@ -53,58 +48,26 @@ fun PlaybackScreen(
     preLoadedRecordings: List<RecorderFile>? = null
 ) {
     val context = LocalContext.current
-    val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
-    val waveformData by viewModel.accumulatedWaveformData.collectAsStateWithLifecycle()
-    val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
-    val repeatEnabled by viewModel.repeatPlaybackEnabled.collectAsStateWithLifecycle()
-    val playbackSpeed by viewModel.playbackSpeed.collectAsStateWithLifecycle()
-    val currentRecording by viewModel.currentRecording.collectAsStateWithLifecycle()
-    val existingRecordings by viewModel.existingRecordings.collectAsStateWithLifecycle()
-
-    val activeRecording = currentRecording ?: recorderFile
-    val formattedTimestamp = remember(timestamp) { FormattingHelper.formatDurationWithMs(timestamp) }
-    val formattedDuration = remember(activeRecording.durationMs) { FormattingHelper.formatDuration(activeRecording.durationMs) }
-
-    BackHandler { viewModel.onReturnToFileExplorer(onNavigateBack) }
-
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var showRenameDialog by remember { mutableStateOf(false) }
-    var renameText by remember { mutableStateOf(activeRecording.name) }
 
     // Load the recording when screen is first displayed
     LaunchedEffect(recorderFile, preLoadedRecordings) {
         viewModel.initialize(context, recorderFile, preLoadedRecordings)
     }
 
-    if (showDeleteDialog) {
-        DeleteRecordingDialog(
-            recordingName = activeRecording.name,
-            onDelete = {
-                fileExplorerViewModel.deleteRecording(context, activeRecording)
-                showDeleteDialog = false
-                viewModel.onReturnToFileExplorer(onNavigateBack)
-            },
-            onCancel = { showDeleteDialog = false }
-        )
-    }
+    BackHandler { viewModel.onReturnToFileExplorer(onNavigateBack) }
 
-    if (showRenameDialog) {
-        RenameRecordingDialog(
-            currentRecording = activeRecording,
-            existingRecordings = existingRecordings,
-            renameText = renameText,
-            onRename = { newName ->
-                fileExplorerViewModel.renameRecording(context, activeRecording, newName)
-                viewModel.applyRename(activeRecording, newName)
-                renameText = newName
-                showRenameDialog = false
-            },
-            onRenameTextChange = { renameText = it },
-            onCancel = {
-                showRenameDialog = false
-            }
-        )
-    }
+    val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
+    val waveformData by viewModel.accumulatedWaveformData.collectAsStateWithLifecycle()
+    val repeatEnabled by viewModel.repeatPlaybackEnabled.collectAsStateWithLifecycle()
+    val playbackSpeed by viewModel.playbackSpeed.collectAsStateWithLifecycle()
+
+    val currentRecording by viewModel.currentRecording.collectAsStateWithLifecycle()
+    val existingRecordings by viewModel.existingRecordings.collectAsStateWithLifecycle()
+
+    val activeRecording = currentRecording ?: recorderFile
+    val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
+    val formattedTimestamp = remember(timestamp) { FormattingHelper.formatDurationWithMs(timestamp) }
+    val formattedDuration = remember(activeRecording.durationMs) { FormattingHelper.formatDuration(activeRecording.durationMs) }
 
     Column(
         modifier = modifier.fillMaxSize()
@@ -122,15 +85,15 @@ fun PlaybackScreen(
             },
             actions = {
                 MoreOptionsMenu(
-                    onRename = {
-                        renameText = activeRecording.name
-                        showRenameDialog = true
+                    context = context,
+                    recording = activeRecording,
+                    existingRecordings = existingRecordings,
+                    onRenameSuccess = { newName ->
+                        fileExplorerViewModel.loadRecordings(context)
+                        viewModel.applyRename(activeRecording, newName)
                     },
-                    onDelete = {
-                        showDeleteDialog = true
-                    },
-                    onShare = {
-                        RecorderFileUtil.shareRecording(context, activeRecording)
+                    onDeleteSuccess = {
+                        viewModel.onReturnToFileExplorer(onNavigateBack)
                     }
                 )
             }
@@ -162,12 +125,20 @@ fun PlaybackScreen(
             ) {
                 Text(
                     text = formattedTimestamp,
-                    style = MaterialTheme.typography.displayMedium,
+                    style = MaterialTheme.typography.displayLarge,
                 )
+            }
 
+            Row(
+                modifier = Modifier
+                .fillMaxWidth()
+                    .align(Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    text = " / $formattedDuration",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = formattedDuration,
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
 
