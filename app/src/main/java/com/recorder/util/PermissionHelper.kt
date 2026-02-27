@@ -14,14 +14,19 @@ import androidx.core.content.ContextCompat
 @Composable
 fun ensureRecordingAudioPermissions(
     context: Context,
-    onPermissionGranted: () -> Unit
+    onPermissionGranted: () -> Unit,
+    onPermissionDenied: () -> Unit
 ): () -> Unit {
     val currentOnGranted by rememberUpdatedState(onPermissionGranted)
+    val currentOnDenied by rememberUpdatedState(onPermissionDenied)
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
             currentOnGranted()
+        } else {
+            currentOnDenied()
         }
     }
 
@@ -35,9 +40,7 @@ fun ensureRecordingAudioPermissions(
                 currentOnGranted()
             } else {
                 permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                permissionLauncher.launch(Manifest.permission.MODIFY_AUDIO_SETTINGS)
             }
         }
     }
 }
-

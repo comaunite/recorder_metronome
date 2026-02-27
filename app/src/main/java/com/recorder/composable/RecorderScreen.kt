@@ -68,10 +68,12 @@ fun RecorderScreen(
 
     BackHandler { viewModel.onBackPressed() }
 
-    val handleRecordAction = ensureRecordingAudioPermissions(context) {
+    val handleRecordAction = ensureRecordingAudioPermissions(context, {
         @SuppressLint("MissingPermission")
         viewModel.onRecordTapped()
-    }
+    }, {
+        viewModel.onPermissionDenied(onNavigateBack)
+    })
 
     Column(
         modifier = modifier.fillMaxSize()

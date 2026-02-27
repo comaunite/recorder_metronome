@@ -1,7 +1,6 @@
 package com.recorder.view_models
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import androidx.annotation.RequiresPermission
 import androidx.lifecycle.ViewModel
@@ -125,8 +124,7 @@ class RecorderViewModel : ViewModel() {
 
     fun onBackDialogDiscard(callback: () -> Unit) {
         _showBackDialog.value = false
-        engine.finalize { }
-        callback()
+        engine.finalize { callback() }
     }
 
     fun onBackDialogCancel() {
@@ -136,5 +134,9 @@ class RecorderViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         engine.finalize { }
+    }
+
+    fun onPermissionDenied(callback: () -> Unit) {
+        engine.finalize { callback() }
     }
 }

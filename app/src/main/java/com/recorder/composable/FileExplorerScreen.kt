@@ -56,11 +56,13 @@ fun FileExplorerScreen(
     val context = LocalContext.current
     val recordings by fileExplorerViewModel.recordings.collectAsStateWithLifecycle()
 
-    val handleRecordAction = ensureRecordingAudioPermissions(context) {
+    val handleRecordAction = ensureRecordingAudioPermissions(context, {
         @SuppressLint("MissingPermission")
         recorderViewModel.onRecordTapped()
         onStartRecording() // This should navigate us to the RecordingScreen
-    }
+    }, {
+        // ignored
+    })
 
     // Load recordings when screen is displayed
     LaunchedEffect(Unit) {
