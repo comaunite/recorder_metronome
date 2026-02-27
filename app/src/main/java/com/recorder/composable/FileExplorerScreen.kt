@@ -1,6 +1,5 @@
 package com.recorder.composable
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -40,33 +39,22 @@ import com.recorder.composable.dialogs.RenameRecordingDialog
 import com.recorder.data.RecordingFile
 import com.recorder.util.FormattingHelper
 import com.recorder.util.RecordingFileUtil
-import com.recorder.util.ensureRecordingAudioPermissions
 import com.recorder.view_models.FileExplorerViewModel
-import com.recorder.view_models.RecorderViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FileExplorerScreen(
     modifier: Modifier = Modifier,
-    recorderViewModel: RecorderViewModel,
-    fileExplorerViewModel: FileExplorerViewModel,
+    viewModel: FileExplorerViewModel,
     onStartRecording: () -> Unit,
     onPlayRecording: (RecordingFile) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val recordings by fileExplorerViewModel.recordings.collectAsStateWithLifecycle()
-
-    val handleRecordAction = ensureRecordingAudioPermissions(context, {
-        @SuppressLint("MissingPermission")
-        recorderViewModel.onRecordTapped()
-        onStartRecording() // This should navigate us to the RecordingScreen
-    }, {
-        // ignored
-    })
+    val recordings by viewModel.recordings.collectAsStateWithLifecycle()
 
     // Load recordings when screen is displayed
     LaunchedEffect(Unit) {
-        fileExplorerViewModel.loadRecordings(context)
+        viewModel.loadRecordings(context)
     }
 
     Column(
@@ -93,7 +81,7 @@ fun FileExplorerScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(start = 16.dp, top = 0.dp, end = 0.dp, bottom = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp)
                 ) {
@@ -101,7 +89,7 @@ fun FileExplorerScreen(
                         RecordingFileItem(
                             recording,
                             recordings,
-                            fileExplorerViewModel,
+                            viewModel,
                             onPlayRecording = { onPlayRecording(recording) }
                         )
                     }
@@ -116,7 +104,7 @@ fun FileExplorerScreen(
                 .padding(bottom = 32.dp),
             contentAlignment = Alignment.BottomCenter
         ) {
-            RecordButton(enabled = true, onClick = { handleRecordAction() })
+            RecordButton(enabled = true, onClick = onStartRecording)
         }
     }
 }

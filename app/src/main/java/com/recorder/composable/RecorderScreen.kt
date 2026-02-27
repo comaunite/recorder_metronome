@@ -59,13 +59,6 @@ fun RecorderScreen(
     var existingRecordings by remember { mutableStateOf(preLoadedRecordings ?: emptyList()) }
     var shouldLoadRecordings by remember { mutableStateOf(preLoadedRecordings == null) }
 
-    LaunchedEffect(Unit) {
-        if (shouldLoadRecordings) {
-            existingRecordings = RecordingFileUtil.getRecordingFiles(context)
-            shouldLoadRecordings = false
-        }
-    }
-
     BackHandler { viewModel.onBackPressed() }
 
     val handleRecordAction = ensureRecordingAudioPermissions(context, {
@@ -74,6 +67,17 @@ fun RecorderScreen(
     }, {
         viewModel.onPermissionDenied(onNavigateBack)
     })
+
+    LaunchedEffect(Unit) {
+        if (shouldLoadRecordings) {
+            existingRecordings = RecordingFileUtil.getRecordingFiles(context)
+            shouldLoadRecordings = false
+        }
+
+        if (state == RecordingState.IDLE) {
+            handleRecordAction()
+        }
+    }
 
     Column(
         modifier = modifier.fillMaxSize()

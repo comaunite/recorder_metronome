@@ -42,8 +42,7 @@ class MainActivity : ComponentActivity() {
                         Screen.FileExplorer -> {
                             FileExplorerScreen(
                                 modifier = Modifier.padding(innerPadding),
-                                recorderViewModel = recorderViewModel,
-                                fileExplorerViewModel = fileExplorerViewModel,
+                                viewModel = fileExplorerViewModel,
                                 onStartRecording = {
                                     currentScreen.value = Screen.Recorder
                                 },
