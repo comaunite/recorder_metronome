@@ -31,6 +31,8 @@ class PlaybackViewModel : ViewModel() {
     private val _existingRecordings = MutableStateFlow<List<RecorderFile>>(emptyList())
     val existingRecordings = _existingRecordings.asStateFlow()
 
+    private var wasPlayingBeforeScrub = false
+
     init {
         // Listen to full waveform updates (at load or playback start)
         viewModelScope.launch {
@@ -111,6 +113,24 @@ class PlaybackViewModel : ViewModel() {
     fun onRepeatToggleTapped() = engine.toggleRepeatPlayback()
     fun onPlaybackSpeedTapped(speed: Float) = engine.setPlaybackSpeed(speed)
     fun onWaveformScrubbed(targetIndex: Int) = engine.seekToWaveformIndex(targetIndex)
+
+    fun onScrubStart() {
+        // Remember if we were playing, then pause
+        wasPlayingBeforeScrub = recordingStateFlow.value == RecordingState.PLAYBACK
+        println("SCRUB_START: wasPlaying=$wasPlayingBeforeScrub, currentState=${recordingStateFlow.value}")
+        if (wasPlayingBeforeScrub) {
+            engine.pause()
+        }
+    }
+
+    fun onScrubEnd() {
+        // Resume playback if we were playing before scrubbing started
+        println("SCRUB_END: wasPlayingBeforeScrub=$wasPlayingBeforeScrub, currentState=${recordingStateFlow.value}")
+        if (wasPlayingBeforeScrub) {
+            engine.playBackCurrentStream()
+            wasPlayingBeforeScrub = false
+        }
+    }
 
     override fun onCleared() {
         super.onCleared()

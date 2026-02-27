@@ -31,6 +31,8 @@ class RecorderViewModel : ViewModel() {
 
     val timestamp = engine.timestampStateFlow
 
+    private var wasPlayingBeforeScrub = false
+
     init {
         // Listen to incremental waveform updates during recording
         viewModelScope.launch {
@@ -88,6 +90,22 @@ class RecorderViewModel : ViewModel() {
     fun onPlaybackTapped() = engine.playBackCurrentStream()
     fun onPausePlaybackTapped() = engine.pause()
     fun onWaveformScrubbed(targetIndex: Int) = engine.seekToWaveformIndex(targetIndex)
+
+    fun onScrubStart() {
+        // Remember if we were playing, then pause
+        wasPlayingBeforeScrub = recordingStateFlow.value == RecordingState.PLAYBACK
+        if (wasPlayingBeforeScrub) {
+            engine.pause()
+        }
+    }
+
+    fun onScrubEnd() {
+        // Resume playback if we were playing before scrubbing started
+        if (wasPlayingBeforeScrub) {
+            engine.playBackCurrentStream()
+            wasPlayingBeforeScrub = false
+        }
+    }
 
     fun onStopTapped() {
         engine.pause()

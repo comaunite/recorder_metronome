@@ -115,7 +115,9 @@ fun RecorderScreen(
                     .fillMaxWidth()
                     .height(150.dp),
                 enableScrubbing = canScrub,
-                onScrubPosition = if (canScrub) ({ viewModel.onWaveformScrubbed(it) }) else null
+                onScrubPosition = if (canScrub) ({ viewModel.onWaveformScrubbed(it) }) else null,
+                onScrubStart = if (canScrub) ({ viewModel.onScrubStart() }) else null,
+                onScrubEnd = if (canScrub) ({ viewModel.onScrubEnd() }) else null
             )
 
             Spacer(modifier = Modifier.height(32.dp))

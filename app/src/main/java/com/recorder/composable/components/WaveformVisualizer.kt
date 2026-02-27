@@ -32,7 +32,9 @@ fun WaveformVisualizer(
     waveColor: Color = MaterialTheme.colorScheme.primary,
     backgroundColor: Color = MaterialTheme.colorScheme.background,
     enableScrubbing: Boolean = false,
-    onScrubPosition: ((Int) -> Unit)? = null
+    onScrubPosition: ((Int) -> Unit)? = null,
+    onScrubStart: (() -> Unit)? = null,
+    onScrubEnd: (() -> Unit)? = null
 ) {
     val density = LocalDensity.current
     val barWidthPx = remember(density) { with(density) { 1.dp.toPx() } }
@@ -85,6 +87,7 @@ fun WaveformVisualizer(
         Modifier.pointerInput(enableScrubbing) {
             detectDragGestures(
                 onDragStart = { offset ->
+                    onScrubStart?.invoke()
                     initialTapX = offset.x
                     currentDragX = offset.x
                     isDragging++ // Trigger the LaunchedEffect
@@ -97,9 +100,11 @@ fun WaveformVisualizer(
                 },
                 onDragEnd = {
                     isDragging = 0 // Stop the velocity updates
+                    onScrubEnd?.invoke()
                 },
                 onDragCancel = {
                     isDragging = 0 // Stop the velocity updates
+                    onScrubEnd?.invoke()
                 }
             )
         }
