@@ -3,7 +3,7 @@ package com.recorder.util
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
-import com.recorder.data.RecordingFile
+import com.recorder.data.RecorderFile
 import com.recorder.data.ParsedAudioData
 import java.io.File
 import java.io.RandomAccessFile
@@ -13,7 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-object RecordingFileUtil {
+object RecorderFileUtil {
     /**
      * Get the recordings directory
      */
@@ -28,17 +28,17 @@ object RecordingFileUtil {
     /**
      * Get all recording files from the recordings directory
      */
-    fun getRecordingFiles(context: Context): List<RecordingFile> {
+    fun getRecorderFiles(context: Context): List<RecorderFile> {
         val recordingsDir = getRecordingsDirectory(context)
-        val recordingFiles = mutableListOf<RecordingFile>()
+        val recorderFiles = mutableListOf<RecorderFile>()
 
         recordingsDir.listFiles()?.forEach { file ->
             if (file.isFile && file.name.endsWith(".wav")) {
                 try {
                     val durationInMs = getWavDuration(file)
                     val createdTime = file.lastModified()
-                    recordingFiles.add(
-                        RecordingFile(
+                    recorderFiles.add(
+                        RecorderFile(
                             name = file.nameWithoutExtension,
                             filePath = file.absolutePath,
                             durationMs = durationInMs,
@@ -53,7 +53,7 @@ object RecordingFileUtil {
         }
 
         // Sort by creation time (newest first)
-        return recordingFiles.sortedByDescending { it.createdTime }
+        return recorderFiles.sortedByDescending { it.createdTime }
     }
 
     /**
@@ -183,7 +183,7 @@ object RecordingFileUtil {
     /**
      * Delete a recording file
      */
-    fun deleteRecording(recording: RecordingFile) {
+    fun deleteRecording(recording: RecorderFile) {
         try {
             val file = File(recording.filePath)
             if (file.exists()) {
@@ -198,7 +198,7 @@ object RecordingFileUtil {
     /**
      * Rename a recording file
      */
-    fun renameRecording(recording: RecordingFile, newName: String) {
+    fun renameRecording(recording: RecorderFile, newName: String) {
         try {
             val oldFile = File(recording.filePath)
             if (oldFile.exists()) {
@@ -217,7 +217,7 @@ object RecordingFileUtil {
     /**
      * Share a recording file
      */
-    fun shareRecording(context: Context, recording: RecordingFile) {
+    fun shareRecording(context: Context, recording: RecorderFile) {
         val file = File(recording.filePath)
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 
@@ -233,7 +233,7 @@ object RecordingFileUtil {
     /**
      * Read and parse a recording file, extracting audio data and WAV header information
      */
-    fun readRecordingFile(filePath: String): ParsedAudioData {
+    fun readRecorderFile(filePath: String): ParsedAudioData {
         val file = File(filePath)
         if (!file.exists()) {
             println("LOAD ERROR: File does not exist: $filePath")

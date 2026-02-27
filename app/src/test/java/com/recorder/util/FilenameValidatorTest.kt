@@ -1,6 +1,6 @@
 package com.recorder.util
 
-import com.recorder.data.RecordingFile
+import com.recorder.data.RecorderFile
 import org.junit.Test
 import org.junit.Assert.*
 
@@ -30,7 +30,7 @@ class FilenameValidatorTest {
     @Test
     fun validateNewFilename_duplicateFileName_returnsFalse() {
         val existingRecordings = listOf(
-            RecordingFile("MyRecording", "/path/to/file", 5000L, System.currentTimeMillis())
+            RecorderFile("MyRecording", "/path/to/file", 5000L, System.currentTimeMillis())
         )
         val result = FilenameValidator.validateNewFilename("MyRecording", existingRecordings)
         assertFalse(result.isValid)
@@ -40,8 +40,8 @@ class FilenameValidatorTest {
     @Test
     fun validateNewFilename_differentFileName_returnsTrue() {
         val existingRecordings = listOf(
-            RecordingFile("Recording1", "/path/to/file1", 5000L, System.currentTimeMillis()),
-            RecordingFile("Recording2", "/path/to/file2", 3000L, System.currentTimeMillis())
+            RecorderFile("Recording1", "/path/to/file1", 5000L, System.currentTimeMillis()),
+            RecorderFile("Recording2", "/path/to/file2", 3000L, System.currentTimeMillis())
         )
         val result = FilenameValidator.validateNewFilename("Recording3", existingRecordings)
         assertTrue(result.isValid)
@@ -72,8 +72,8 @@ class FilenameValidatorTest {
     @Test
     fun validateRenameFilename_newNameAlreadyExists_returnsFalse() {
         val existingRecordings = listOf(
-            RecordingFile("Recording1", "/path/to/file1", 5000L, System.currentTimeMillis()),
-            RecordingFile("Recording2", "/path/to/file2", 3000L, System.currentTimeMillis())
+            RecorderFile("Recording1", "/path/to/file1", 5000L, System.currentTimeMillis()),
+            RecorderFile("Recording2", "/path/to/file2", 3000L, System.currentTimeMillis())
         )
         val result = FilenameValidator.validateRenameFilename(
             "Recording1",
@@ -87,8 +87,8 @@ class FilenameValidatorTest {
     @Test
     fun validateRenameFilename_validNewName_returnsTrue() {
         val existingRecordings = listOf(
-            RecordingFile("Recording1", "/path/to/file1", 5000L, System.currentTimeMillis()),
-            RecordingFile("Recording2", "/path/to/file2", 3000L, System.currentTimeMillis())
+            RecorderFile("Recording1", "/path/to/file1", 5000L, System.currentTimeMillis()),
+            RecorderFile("Recording2", "/path/to/file2", 3000L, System.currentTimeMillis())
         )
         val result = FilenameValidator.validateRenameFilename(
             "NewName",
@@ -102,7 +102,7 @@ class FilenameValidatorTest {
     @Test
     fun validateRenameFilename_renameToExistingButSameName_returnsTrue() {
         val existingRecordings = listOf(
-            RecordingFile("OldName", "/path/to/file", 5000L, System.currentTimeMillis())
+            RecorderFile("OldName", "/path/to/file", 5000L, System.currentTimeMillis())
         )
         val result = FilenameValidator.validateRenameFilename(
             "OldName",
@@ -115,7 +115,7 @@ class FilenameValidatorTest {
     @Test
     fun validateRenameFilename_caseSensitive_treatsAsNewName() {
         val existingRecordings = listOf(
-            RecordingFile("recording", "/path/to/file", 5000L, System.currentTimeMillis())
+            RecorderFile("recording", "/path/to/file", 5000L, System.currentTimeMillis())
         )
         val result = FilenameValidator.validateRenameFilename(
             "Recording",

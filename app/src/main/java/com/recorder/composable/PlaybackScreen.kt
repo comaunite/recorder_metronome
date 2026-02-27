@@ -38,9 +38,9 @@ import com.recorder.composable.components.RepeatToggleButtonSmall
 import com.recorder.composable.components.WaveformVisualizer
 import com.recorder.composable.dialogs.DeleteRecordingDialog
 import com.recorder.composable.dialogs.RenameRecordingDialog
-import com.recorder.data.RecordingFile
+import com.recorder.data.RecorderFile
 import com.recorder.util.FormattingHelper
-import com.recorder.util.RecordingFileUtil
+import com.recorder.util.RecorderFileUtil
 import com.recorder.util.RecordingState
 import com.recorder.view_models.FileExplorerViewModel
 import com.recorder.view_models.PlaybackViewModel
@@ -51,9 +51,9 @@ fun PlaybackScreen(
     modifier: Modifier = Modifier,
     viewModel: PlaybackViewModel,
     fileExplorerViewModel: FileExplorerViewModel,
-    recordingFile: RecordingFile,
+    recorderFile: RecorderFile,
     onNavigateBack: () -> Unit = {},
-    preLoadedRecordings: List<RecordingFile>? = null
+    preLoadedRecordings: List<RecorderFile>? = null
 ) {
     val context = LocalContext.current
     val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
@@ -64,7 +64,7 @@ fun PlaybackScreen(
     val currentRecording by viewModel.currentRecording.collectAsStateWithLifecycle()
     val existingRecordings by viewModel.existingRecordings.collectAsStateWithLifecycle()
 
-    val activeRecording = currentRecording ?: recordingFile
+    val activeRecording = currentRecording ?: recorderFile
     val formattedTimestamp = remember(timestamp) { FormattingHelper.formatDurationWithMs(timestamp) }
     val formattedDuration = remember(activeRecording.durationMs) { FormattingHelper.formatDuration(activeRecording.durationMs) }
 
@@ -76,8 +76,8 @@ fun PlaybackScreen(
     var renameText by remember { mutableStateOf(activeRecording.name) }
 
     // Load the recording when screen is first displayed
-    LaunchedEffect(recordingFile, preLoadedRecordings) {
-        viewModel.initialize(context, recordingFile, preLoadedRecordings)
+    LaunchedEffect(recorderFile, preLoadedRecordings) {
+        viewModel.initialize(context, recorderFile, preLoadedRecordings)
     }
 
     if (showDeleteDialog) {
@@ -155,7 +155,7 @@ fun PlaybackScreen(
                             text = { Text("Share") },
                             onClick = {
                                 menuExpanded = false
-                                RecordingFileUtil.shareRecording(context, activeRecording)
+                                RecorderFileUtil.shareRecording(context, activeRecording)
                             }
                         )
                     }

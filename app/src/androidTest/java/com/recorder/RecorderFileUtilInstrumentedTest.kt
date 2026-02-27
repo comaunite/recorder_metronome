@@ -7,13 +7,13 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Assert.*
-import com.recorder.util.RecordingFileUtil
+import com.recorder.util.RecorderFileUtil
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 @RunWith(AndroidJUnit4::class)
-class RecordingFileUtilInstrumentedTest {
+class RecorderFileUtilInstrumentedTest {
     private lateinit var context: Context
     private lateinit var testDir: File
 
@@ -42,7 +42,7 @@ class RecordingFileUtilInstrumentedTest {
     }
 
     @Test
-    fun readRecordingFile_withValidWavHeader_parsesCorrectly() {
+    fun readRecorderFile_withValidWavHeader_parsesCorrectly() {
         // Create a test WAV file with valid header
         val wavFile = createTestWavFile(
             fileName = "test_valid.wav",
@@ -52,7 +52,7 @@ class RecordingFileUtilInstrumentedTest {
             audioData = ByteArray(100) { 42 }
         )
 
-        val parsed = RecordingFileUtil.readRecordingFile(wavFile.absolutePath)
+        val parsed = RecorderFileUtil.readRecorderFile(wavFile.absolutePath)
 
         assertEquals(44100, parsed.sampleRate)
         assertEquals(1, parsed.channels)
@@ -63,13 +63,13 @@ class RecordingFileUtilInstrumentedTest {
     }
 
     @Test
-    fun readRecordingFile_withRawPcmData_treatsAsRawAndFallsBackToDefaults() {
+    fun readRecorderFile_withRawPcmData_treatsAsRawAndFallsBackToDefaults() {
         // Create a file with just raw PCM data smaller than 44 bytes (can't be a valid WAV header)
         val pcmFile = File(testDir, "test_raw.wav")
         val audioData = ByteArray(20) { 55 }
         pcmFile.writeBytes(audioData)
 
-        val parsed = RecordingFileUtil.readRecordingFile(pcmFile.absolutePath)
+        val parsed = RecorderFileUtil.readRecorderFile(pcmFile.absolutePath)
 
         assertEquals(44100, parsed.sampleRate) // Default fallback
         assertEquals(1, parsed.channels) // Default fallback
@@ -79,7 +79,7 @@ class RecordingFileUtilInstrumentedTest {
     }
 
     @Test
-    fun readRecordingFile_withInvalidHeader_fallsBackToRawPcm() {
+    fun readRecorderFile_withInvalidHeader_fallsBackToRawPcm() {
         // Create a file with invalid WAV header (0 sample rate)
         val invalidFile = File(testDir, "test_invalid.wav")
         val header = createWavHeader(
@@ -91,7 +91,7 @@ class RecordingFileUtilInstrumentedTest {
         val audioData = ByteArray(100) { 77 }
         invalidFile.writeBytes(header + audioData)
 
-        val parsed = RecordingFileUtil.readRecordingFile(invalidFile.absolutePath)
+        val parsed = RecorderFileUtil.readRecorderFile(invalidFile.absolutePath)
 
         assertFalse(parsed.hasValidHeader)
         // Should treat entire file as raw PCM (header + audio)
@@ -99,26 +99,26 @@ class RecordingFileUtilInstrumentedTest {
     }
 
     @Test
-    fun readRecordingFile_withNonExistentFile_throwsException() {
+    fun readRecorderFile_withNonExistentFile_throwsException() {
         val nonExistentPath = File(testDir, "non_existent.wav").absolutePath
 
         assertThrows(Exception::class.java) {
-            RecordingFileUtil.readRecordingFile(nonExistentPath)
+            RecorderFileUtil.readRecorderFile(nonExistentPath)
         }
     }
 
     @Test
-    fun readRecordingFile_withEmptyFile_throwsException() {
+    fun readRecorderFile_withEmptyFile_throwsException() {
         val emptyFile = File(testDir, "empty.wav")
         emptyFile.createNewFile()
 
         assertThrows(Exception::class.java) {
-            RecordingFileUtil.readRecordingFile(emptyFile.absolutePath)
+            RecorderFileUtil.readRecorderFile(emptyFile.absolutePath)
         }
     }
 
     @Test
-    fun readRecordingFile_with48khzStereo_parsesCorrectly() {
+    fun readRecorderFile_with48khzStereo_parsesCorrectly() {
         val wavFile = createTestWavFile(
             fileName = "test_stereo.wav",
             sampleRate = 48000,
@@ -127,7 +127,7 @@ class RecordingFileUtilInstrumentedTest {
             audioData = ByteArray(200) { 99 }
         )
 
-        val parsed = RecordingFileUtil.readRecordingFile(wavFile.absolutePath)
+        val parsed = RecorderFileUtil.readRecorderFile(wavFile.absolutePath)
 
         assertEquals(48000, parsed.sampleRate)
         assertEquals(2, parsed.channels)
@@ -136,7 +136,7 @@ class RecordingFileUtilInstrumentedTest {
     }
 
     @Test
-    fun readRecordingFile_withVariousAudioSizes_parsesCorrectly() {
+    fun readRecorderFile_withVariousAudioSizes_parsesCorrectly() {
         // Small audio
         val smallFile = createTestWavFile(
             fileName = "test_small.wav",
@@ -146,7 +146,7 @@ class RecordingFileUtilInstrumentedTest {
             audioData = ByteArray(10)
         )
 
-        val smallParsed = RecordingFileUtil.readRecordingFile(smallFile.absolutePath)
+        val smallParsed = RecorderFileUtil.readRecorderFile(smallFile.absolutePath)
         assertEquals(10, smallParsed.audioData.size)
 
         // Large audio
@@ -158,12 +158,12 @@ class RecordingFileUtilInstrumentedTest {
             audioData = ByteArray(10000)
         )
 
-        val largeParsed = RecordingFileUtil.readRecordingFile(largeFile.absolutePath)
+        val largeParsed = RecorderFileUtil.readRecorderFile(largeFile.absolutePath)
         assertEquals(10000, largeParsed.audioData.size)
     }
 
     @Test
-    fun readRecordingFile_multipleReads_returnConsistentData() {
+    fun readRecorderFile_multipleReads_returnConsistentData() {
         val wavFile = createTestWavFile(
             fileName = "test_consistent.wav",
             sampleRate = 44100,
@@ -172,8 +172,8 @@ class RecordingFileUtilInstrumentedTest {
             audioData = ByteArray(100) { 88 }
         )
 
-        val parsed1 = RecordingFileUtil.readRecordingFile(wavFile.absolutePath)
-        val parsed2 = RecordingFileUtil.readRecordingFile(wavFile.absolutePath)
+        val parsed1 = RecorderFileUtil.readRecorderFile(wavFile.absolutePath)
+        val parsed2 = RecorderFileUtil.readRecorderFile(wavFile.absolutePath)
 
         assertEquals(parsed1.sampleRate, parsed2.sampleRate)
         assertEquals(parsed1.channels, parsed2.channels)

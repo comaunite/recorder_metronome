@@ -3,7 +3,7 @@ package com.recorder.view_models
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.recorder.data.RecordingFile
+import com.recorder.data.RecorderFile
 import com.recorder.util.RecordingState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -44,7 +44,7 @@ class PlaybackViewModelInstrumentedTest {
             audioData = ByteArray(1000) { 42 }
         )
 
-        val recording = RecordingFile(
+        val recording = RecorderFile(
             name = "Test Recording",
             filePath = wavFile.absolutePath,
             durationMs = 1000L,
@@ -73,8 +73,8 @@ class PlaybackViewModelInstrumentedTest {
     fun playbackViewModel_withPreLoadedRecordings_usesProvidedList() {
         val viewModel = PlaybackViewModel()
         val preLoadedRecordings = listOf(
-            RecordingFile("Recording 1", "/path1", 1000L, System.currentTimeMillis()),
-            RecordingFile("Recording 2", "/path2", 2000L, System.currentTimeMillis())
+            RecorderFile("Recording 1", "/path1", 1000L, System.currentTimeMillis()),
+            RecorderFile("Recording 2", "/path2", 2000L, System.currentTimeMillis())
         )
 
         val wavFile = createTestWavFile(
@@ -85,7 +85,7 @@ class PlaybackViewModelInstrumentedTest {
             audioData = ByteArray(100) { 42 }
         )
 
-        val recording = RecordingFile(
+        val recording = RecorderFile(
             name = "Current",
             filePath = wavFile.absolutePath,
             durationMs = 1000L,
@@ -101,7 +101,7 @@ class PlaybackViewModelInstrumentedTest {
     @Test
     fun playbackViewModel_applyRename_updatesRecordingName() {
         val viewModel = PlaybackViewModel()
-        val oldRecording = RecordingFile(
+        val oldRecording = RecorderFile(
             name = "Old Name",
             filePath = "/path/old.wav",
             durationMs = 1000L,
@@ -124,7 +124,7 @@ class PlaybackViewModelInstrumentedTest {
             audioData = ByteArray(44100) { 42 } // ~1 second
         )
 
-        val recording = RecordingFile(
+        val recording = RecorderFile(
             name = "Test",
             filePath = wavFile.absolutePath,
             durationMs = 1000L,
@@ -153,7 +153,7 @@ class PlaybackViewModelInstrumentedTest {
             audioData = ByteArray(100) { 42 }
         )
 
-        val recording = RecordingFile(
+        val recording = RecorderFile(
             name = "Test Recording",
             filePath = wavFile.absolutePath,
             durationMs = 1000L,
@@ -168,7 +168,7 @@ class PlaybackViewModelInstrumentedTest {
     @Test
     fun playbackViewModel_errorHandling_doesNotCrashOnInvalidFile() {
         val viewModel = PlaybackViewModel()
-        val recording = RecordingFile(
+        val recording = RecorderFile(
             name = "Invalid",
             filePath = "/non/existent/file.wav",
             durationMs = 1000L,

@@ -66,17 +66,9 @@ class PlaybackViewModelTest {
     }
 
     @Test
-    fun playbackViewModel_onStopTapped_doesNotCrash() {
-        val viewModel = PlaybackViewModel()
-        // Should not throw
-        viewModel.onStopTapped()
-        assertNotNull(viewModel)
-    }
-
-    @Test
     fun playbackViewModel_applyRename_updatesCurrentRecordingName() {
         val viewModel = PlaybackViewModel()
-        val oldRecording = com.recorder.data.RecordingFile(
+        val oldRecording = com.recorder.data.RecorderFile(
             name = "Old Name",
             filePath = "/path/old.wav",
             durationMs = 1000L,
@@ -91,7 +83,7 @@ class PlaybackViewModelTest {
     @Test
     fun playbackViewModel_applyRename_updatesFilePath() {
         val viewModel = PlaybackViewModel()
-        val oldRecording = com.recorder.data.RecordingFile(
+        val oldRecording = com.recorder.data.RecorderFile(
             name = "Old Name",
             filePath = "/path/old.wav",
             durationMs = 1000L,
@@ -109,7 +101,7 @@ class PlaybackViewModelTest {
     @Test
     fun playbackViewModel_applyRename_preservesOtherAttributes() {
         val viewModel = PlaybackViewModel()
-        val oldRecording = com.recorder.data.RecordingFile(
+        val oldRecording = com.recorder.data.RecorderFile(
             name = "Old",
             filePath = "/path/old.wav",
             durationMs = 5000L,

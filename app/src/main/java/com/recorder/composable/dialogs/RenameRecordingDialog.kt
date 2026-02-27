@@ -21,13 +21,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.recorder.data.RecordingFile
+import com.recorder.data.RecorderFile
 import com.recorder.util.FilenameValidator
 
 @Composable
 fun RenameRecordingDialog(
-    currentRecording: RecordingFile,
-    existingRecordings: List<RecordingFile>,
+    currentRecording: RecorderFile,
+    existingRecordings: List<RecorderFile>,
     onRename: (String) -> Unit,
     onCancel: () -> Unit,
     renameText: String,

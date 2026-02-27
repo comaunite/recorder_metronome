@@ -1,6 +1,6 @@
 package com.recorder.util
 
-import com.recorder.data.RecordingFile
+import com.recorder.data.RecorderFile
 
 object FilenameValidator {
     /**
@@ -9,7 +9,7 @@ object FilenameValidator {
      * @param existingRecordings The list of existing recordings to check against
      * @return ValidationResult containing the validity and error message
      */
-    fun validateNewFilename(filename: String, existingRecordings: List<RecordingFile>): ValidationResult {
+    fun validateNewFilename(filename: String, existingRecordings: List<RecorderFile>): ValidationResult {
         return when {
             filename.isBlank() -> ValidationResult(false, "Name cannot be empty")
             existingRecordings.any { it.name == filename } ->
@@ -28,7 +28,7 @@ object FilenameValidator {
     fun validateRenameFilename(
         filename: String,
         currentName: String,
-        existingRecordings: List<RecordingFile>
+        existingRecordings: List<RecorderFile>
     ): ValidationResult {
         return when {
             filename.isBlank() -> ValidationResult(false, "Name cannot be empty")

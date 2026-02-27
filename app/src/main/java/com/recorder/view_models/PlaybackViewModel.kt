@@ -3,10 +3,10 @@ package com.recorder.view_models
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.recorder.data.RecordingFile
+import com.recorder.data.RecorderFile
 import com.recorder.data.WaveformData
 import com.recorder.util.RecorderEngine
-import com.recorder.util.RecordingFileUtil
+import com.recorder.util.RecorderFileUtil
 import com.recorder.util.RecordingState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,10 +25,10 @@ class PlaybackViewModel : ViewModel() {
     val repeatPlaybackEnabled = engine.repeatPlaybackEnabledFlow
     val playbackSpeed = engine.playbackSpeedFlow
 
-    private val _currentRecording = MutableStateFlow<RecordingFile?>(null)
+    private val _currentRecording = MutableStateFlow<RecorderFile?>(null)
     val currentRecording = _currentRecording.asStateFlow()
 
-    private val _existingRecordings = MutableStateFlow<List<RecordingFile>>(emptyList())
+    private val _existingRecordings = MutableStateFlow<List<RecorderFile>>(emptyList())
     val existingRecordings = _existingRecordings.asStateFlow()
 
     init {
@@ -57,14 +57,14 @@ class PlaybackViewModel : ViewModel() {
 
     fun initialize(
         context: Context,
-        recording: RecordingFile,
-        preLoadedRecordings: List<RecordingFile>?
+        recording: RecorderFile,
+        preLoadedRecordings: List<RecorderFile>?
     ) {
         _currentRecording.value = recording
 
         println("PLAYBACK_VM: Initializing with recording: ${recording.name} at ${recording.filePath}")
         try {
-            val parsedAudio = RecordingFileUtil.readRecordingFile(recording.filePath)
+            val parsedAudio = RecorderFileUtil.readRecorderFile(recording.filePath)
             engine.loadRecordingForPlayback(parsedAudio)
         } catch (e: Exception) {
             println("PLAYBACK_VM: Error loading audio file: ${e.message}")
@@ -76,12 +76,12 @@ class PlaybackViewModel : ViewModel() {
             _existingRecordings.value = preLoadedRecordings
         } else {
             viewModelScope.launch(Dispatchers.IO) {
-                _existingRecordings.value = RecordingFileUtil.getRecordingFiles(context)
+                _existingRecordings.value = RecorderFileUtil.getRecorderFiles(context)
             }
         }
     }
 
-    fun applyRename(oldRecording: RecordingFile, newName: String) {
+    fun applyRename(oldRecording: RecorderFile, newName: String) {
         val updated = oldRecording.copy(
             name = newName,
             filePath = buildRenamedPath(oldRecording.filePath, newName)

@@ -33,7 +33,7 @@ import com.recorder.composable.components.PauseButtonSmall
 import com.recorder.composable.components.PauseButtonBig
 import com.recorder.composable.dialogs.ExitRecordingDialog
 import com.recorder.composable.dialogs.StopRecordingDialog
-import com.recorder.util.RecordingFileUtil
+import com.recorder.util.RecorderFileUtil
 import com.recorder.composable.components.PlayButtonSmall
 import com.recorder.composable.components.RecordButton
 import com.recorder.composable.components.StopButton
@@ -48,7 +48,7 @@ fun RecorderScreen(
     modifier: Modifier = Modifier,
     viewModel: RecorderViewModel,
     onNavigateBack: () -> Unit = {},
-    preLoadedRecordings: List<com.recorder.data.RecordingFile>? = null
+    preLoadedRecordings: List<com.recorder.data.RecorderFile>? = null
 ) {
     val context = LocalContext.current
     val state by viewModel.recordingStateFlow.collectAsStateWithLifecycle()
@@ -70,7 +70,7 @@ fun RecorderScreen(
 
     LaunchedEffect(Unit) {
         if (shouldLoadRecordings) {
-            existingRecordings = RecordingFileUtil.getRecordingFiles(context)
+            existingRecordings = RecorderFileUtil.getRecorderFiles(context)
             shouldLoadRecordings = false
         }
 

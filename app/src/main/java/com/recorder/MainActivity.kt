@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import com.recorder.composable.FileExplorerScreen
 import com.recorder.composable.PlaybackScreen
 import com.recorder.composable.RecorderScreen
-import com.recorder.data.RecordingFile
+import com.recorder.data.RecorderFile
 import com.recorder.ui.theme.RecorderTheme
 import com.recorder.view_models.FileExplorerViewModel
 import com.recorder.view_models.PlaybackViewModel
@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
             RecorderTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val currentScreen = remember { mutableStateOf<Screen>(Screen.FileExplorer) }
-                    val selectedRecording = remember { mutableStateOf<RecordingFile?>(null) }
+                    val selectedRecording = remember { mutableStateOf<RecorderFile?>(null) }
                     val preLoadedRecordings by fileExplorerViewModel.recordings.collectAsStateWithLifecycle()
 
                     when (currentScreen.value) {
@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.padding(innerPadding),
                                     viewModel = playbackViewModel,
                                     fileExplorerViewModel = fileExplorerViewModel,
-                                    recordingFile = recording,
+                                    recorderFile = recording,
                                     onNavigateBack = {
                                         currentScreen.value = Screen.FileExplorer
                                     },

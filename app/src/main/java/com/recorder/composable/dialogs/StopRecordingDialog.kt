@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import com.recorder.data.RecordingFile
+import com.recorder.data.RecorderFile
 import com.recorder.util.FilenameValidator
 
 @Composable
@@ -28,7 +28,7 @@ fun StopRecordingDialog(
     onSave: (String) -> Unit,
     onCancel: () -> Unit,
     preGeneratedName: String = "",
-    existingRecordings: List<RecordingFile> = emptyList()
+    existingRecordings: List<RecorderFile> = emptyList()
 ) {
     var fileName by remember { mutableStateOf(preGeneratedName) }
     val validationResult = FilenameValidator.validateNewFilename(fileName, existingRecordings)

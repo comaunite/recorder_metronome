@@ -36,9 +36,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recorder.composable.components.RecordButton
 import com.recorder.composable.dialogs.DeleteRecordingDialog
 import com.recorder.composable.dialogs.RenameRecordingDialog
-import com.recorder.data.RecordingFile
+import com.recorder.data.RecorderFile
 import com.recorder.util.FormattingHelper
-import com.recorder.util.RecordingFileUtil
+import com.recorder.util.RecorderFileUtil
 import com.recorder.view_models.FileExplorerViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,7 +47,7 @@ fun FileExplorerScreen(
     modifier: Modifier = Modifier,
     viewModel: FileExplorerViewModel,
     onStartRecording: () -> Unit,
-    onPlayRecording: (RecordingFile) -> Unit = {}
+    onPlayRecording: (RecorderFile) -> Unit = {}
 ) {
     val context = LocalContext.current
     val recordings by viewModel.recordings.collectAsStateWithLifecycle()
@@ -61,7 +61,7 @@ fun FileExplorerScreen(
         modifier = modifier.fillMaxSize()
     ) {
         TopAppBar(
-            title = { Text("Recordings") },
+            title = { Text("Recordings (${recordings.size})") },
         )
 
         // Recordings List
@@ -86,7 +86,7 @@ fun FileExplorerScreen(
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp)
                 ) {
                     items(recordings) { recording ->
-                        RecordingFileItem(
+                        RecorderFileItem(
                             recording,
                             recordings,
                             viewModel,
@@ -110,9 +110,9 @@ fun FileExplorerScreen(
 }
 
 @Composable
-fun RecordingFileItem(
-    recording: RecordingFile,
-    recordings: List<RecordingFile>,
+fun RecorderFileItem(
+    recording: RecorderFile,
+    recordings: List<RecorderFile>,
     fileExplorerViewModel: FileExplorerViewModel = remember { FileExplorerViewModel() },
     onPlayRecording: () -> Unit = {}
 ) {
@@ -239,7 +239,7 @@ fun RecordingFileItem(
                     text = { Text("Share") },
                     onClick = {
                         menuExpanded = false
-                        RecordingFileUtil.shareRecording(context, recording)
+                        RecorderFileUtil.shareRecording(context, recording)
                     }
                 )
             }

@@ -3,34 +3,34 @@ package com.recorder.view_models
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.recorder.data.RecordingFile
-import com.recorder.util.RecordingFileUtil
+import com.recorder.data.RecorderFile
+import com.recorder.util.RecorderFileUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class FileExplorerViewModel : ViewModel() {
-    private val _recordings = MutableStateFlow<List<RecordingFile>>(emptyList())
+    private val _recordings = MutableStateFlow<List<RecorderFile>>(emptyList())
     val recordings = _recordings.asStateFlow()
 
     fun loadRecordings(context: Context) {
         viewModelScope.launch {
-            val recordingFiles = RecordingFileUtil.getRecordingFiles(context)
-            _recordings.value = recordingFiles
+            val recorderFiles = RecorderFileUtil.getRecorderFiles(context)
+            _recordings.value = recorderFiles
         }
     }
 
-    fun deleteRecording(context: Context, recording: RecordingFile) {
+    fun deleteRecording(context: Context, recording: RecorderFile) {
         viewModelScope.launch {
-            RecordingFileUtil.deleteRecording(recording)
+            RecorderFileUtil.deleteRecording(recording)
             // Reload recordings after deletion
             loadRecordings(context)
         }
     }
 
-    fun renameRecording(context: Context, recording: RecordingFile, newName: String) {
+    fun renameRecording(context: Context, recording: RecorderFile, newName: String) {
         viewModelScope.launch {
-            RecordingFileUtil.renameRecording(recording, newName)
+            RecorderFileUtil.renameRecording(recording, newName)
             // Reload recordings after rename
             loadRecordings(context)
         }
