@@ -105,7 +105,7 @@ fun RecorderScreen(
             // Timestamp Tracker
             Text(
                 text = formattedTimestamp,
-                style = MaterialTheme.typography.displayMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
 

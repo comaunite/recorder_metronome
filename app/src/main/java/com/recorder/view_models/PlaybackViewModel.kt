@@ -25,7 +25,7 @@ class PlaybackViewModel : ViewModel() {
     val repeatPlaybackEnabled = engine.repeatPlaybackEnabledFlow
     val playbackSpeed = engine.playbackSpeedFlow
 
-    private val _currentRecording = MutableStateFlow<RecorderFile?>(null)
+    private val _currentRecording = MutableStateFlow(RecorderFile("", "", 0, 0))
     val currentRecording = _currentRecording.asStateFlow()
 
     private val _existingRecordings = MutableStateFlow<List<RecorderFile>>(emptyList())
@@ -81,7 +81,7 @@ class PlaybackViewModel : ViewModel() {
         }
     }
 
-    fun applyRename(oldRecording: RecorderFile, newName: String) {
+    fun updateInMemoryCollections(oldRecording: RecorderFile, newName: String) {
         val updated = oldRecording.copy(
             name = newName,
             filePath = buildRenamedPath(oldRecording.filePath, newName)

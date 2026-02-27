@@ -30,7 +30,8 @@ fun MoreOptionsMenu(
     var menuExpanded by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
-    var renameText by remember { mutableStateOf(recording.name) }
+    // Use remember(recording) to ensure the state resets when the recording changes
+    var renameText by remember(recording) { mutableStateOf(recording.name) }
 
     if (showDeleteDialog) {
         DeleteRecordingDialog(
@@ -76,6 +77,8 @@ fun MoreOptionsMenu(
                 text = { Text("Rename") },
                 onClick = {
                     menuExpanded = false
+                    // Reset renameText to current recording name before showing dialog
+                    renameText = recording.name
                     showRenameDialog = true
                 }
             )

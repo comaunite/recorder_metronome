@@ -64,10 +64,9 @@ fun PlaybackScreen(
     val currentRecording by viewModel.currentRecording.collectAsStateWithLifecycle()
     val existingRecordings by viewModel.existingRecordings.collectAsStateWithLifecycle()
 
-    val activeRecording = currentRecording ?: recorderFile
     val timestamp by viewModel.timestamp.collectAsStateWithLifecycle()
     val formattedTimestamp = remember(timestamp) { FormattingHelper.formatDurationWithMs(timestamp) }
-    val formattedDuration = remember(activeRecording.durationMs) { FormattingHelper.formatDuration(activeRecording.durationMs) }
+    val formattedDuration = remember(currentRecording.durationMs) { FormattingHelper.formatDuration(currentRecording.durationMs) }
 
     Column(
         modifier = modifier.fillMaxSize()
@@ -86,11 +85,11 @@ fun PlaybackScreen(
             actions = {
                 MoreOptionsMenu(
                     context = context,
-                    recording = activeRecording,
+                    recording = currentRecording,
                     existingRecordings = existingRecordings,
                     onRenameSuccess = { newName ->
                         fileExplorerViewModel.loadRecordings(context)
-                        viewModel.applyRename(activeRecording, newName)
+                        viewModel.updateInMemoryCollections(currentRecording, newName)
                     },
                     onDeleteSuccess = {
                         viewModel.onReturnToFileExplorer(onNavigateBack)
@@ -106,9 +105,8 @@ fun PlaybackScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // File name - now updates when renamed
             Text(
-                text = activeRecording.name,
+                text = currentRecording.name,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )

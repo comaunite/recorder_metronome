@@ -75,7 +75,7 @@ class PlaybackViewModelTest {
             createdTime = System.currentTimeMillis()
         )
 
-        viewModel.applyRename(oldRecording, "New Name")
+        viewModel.updateInMemoryCollections(oldRecording, "New Name")
 
         assertEquals("New Name", viewModel.currentRecording.value?.name)
     }
@@ -90,7 +90,7 @@ class PlaybackViewModelTest {
             createdTime = System.currentTimeMillis()
         )
 
-        viewModel.applyRename(oldRecording, "New Name")
+        viewModel.updateInMemoryCollections(oldRecording, "New Name")
 
         // File path should be updated with new name
         val newRecording = viewModel.currentRecording.value
@@ -108,7 +108,7 @@ class PlaybackViewModelTest {
             createdTime = 123456L
         )
 
-        viewModel.applyRename(oldRecording, "NewName")
+        viewModel.updateInMemoryCollections(oldRecording, "NewName")
 
         val newRecording = viewModel.currentRecording.value
         assertNotNull(newRecording)

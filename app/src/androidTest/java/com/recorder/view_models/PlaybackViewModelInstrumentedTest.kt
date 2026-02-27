@@ -108,7 +108,7 @@ class PlaybackViewModelInstrumentedTest {
             createdTime = System.currentTimeMillis()
         )
 
-        viewModel.applyRename(oldRecording, "New Name")
+        viewModel.updateInMemoryCollections(oldRecording, "New Name")
 
         assertEquals("New Name", viewModel.currentRecording.value?.name)
     }
