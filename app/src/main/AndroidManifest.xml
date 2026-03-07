@@ -31,6 +31,10 @@
             </intent-filter>
         </activity>
 
+        <meta-data
+            android:name="author"
+            android:value="Jurijs Kastanovs" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
