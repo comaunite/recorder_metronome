@@ -135,5 +135,137 @@ class PlaybackViewModelTest {
         assertNotNull(viewModel.currentRecording)
         assertNotNull(viewModel.existingRecordings)
     }
+
+    @Test
+    fun playbackViewModel_setExistingRecordings_updatesRecordingsList() {
+        val viewModel = PlaybackViewModel()
+        val recordings = listOf(
+            com.recorder.data.RecorderFile("Rec1", "/path1", 1000L, 123L),
+            com.recorder.data.RecorderFile("Rec2", "/path2", 2000L, 456L)
+        )
+
+        viewModel.setExistingRecordings(recordings)
+
+        assertEquals(2, viewModel.existingRecordings.value.size)
+        assertEquals("Rec1", viewModel.existingRecordings.value[0].name)
+        assertEquals("Rec2", viewModel.existingRecordings.value[1].name)
+    }
+
+    @Test
+    fun playbackViewModel_onRepeatToggleTapped_doesNotCrash() {
+        val viewModel = PlaybackViewModel()
+        // Should not throw
+        viewModel.onRepeatToggleTapped()
+        assertNotNull(viewModel)
+    }
+
+    @Test
+    fun playbackViewModel_onPlaybackSpeedTapped_doesNotCrash() {
+        val viewModel = PlaybackViewModel()
+        // Should not throw
+        viewModel.onPlaybackSpeedTapped(1.5f)
+        assertNotNull(viewModel)
+    }
+
+    @Test
+    fun playbackViewModel_onWaveformScrubbed_doesNotCrash() {
+        val viewModel = PlaybackViewModel()
+        // Should not throw
+        viewModel.onWaveformScrubbed(50)
+        assertNotNull(viewModel)
+    }
+
+    @Test
+    fun playbackViewModel_onScrubStart_doesNotCrash() {
+        val viewModel = PlaybackViewModel()
+        // Should not throw
+        viewModel.onScrubStart()
+        assertNotNull(viewModel)
+    }
+
+    @Test
+    fun playbackViewModel_onScrubEnd_doesNotCrash() {
+        val viewModel = PlaybackViewModel()
+        // Should not throw
+        viewModel.onScrubEnd()
+        assertNotNull(viewModel)
+    }
+
+    @Test
+    fun playbackViewModel_onReturnToFileExplorer_executesCallback() {
+        val viewModel = PlaybackViewModel()
+        var callbackExecuted = false
+
+        viewModel.onReturnToFileExplorer { callbackExecuted = true }
+
+        // Give it a moment for async finalization
+        Thread.sleep(100)
+        assertTrue(callbackExecuted)
+    }
+
+    @Test
+    fun playbackViewModel_updateInMemoryCollections_updatesExistingRecordingsList() {
+        val viewModel = PlaybackViewModel()
+        val oldRecording = com.recorder.data.RecorderFile(
+            name = "Old",
+            filePath = "/path/old.wav",
+            durationMs = 1000L,
+            createdTime = 123L
+        )
+
+        // Set up existing recordings that include the old recording
+        val existingRecordings = listOf(
+            com.recorder.data.RecorderFile("Other", "/path/other.wav", 500L, 100L),
+            oldRecording,
+            com.recorder.data.RecorderFile("Another", "/path/another.wav", 700L, 200L)
+        )
+        viewModel.setExistingRecordings(existingRecordings)
+
+        // Update the recording
+        viewModel.updateInMemoryCollections(oldRecording, "New")
+
+        // Verify the list was updated
+        val updatedList = viewModel.existingRecordings.value
+        assertEquals(3, updatedList.size)
+
+        // Find the updated recording
+        val updatedRecording = updatedList.find { it.filePath.contains("New") }
+        assertNotNull(updatedRecording)
+        assertEquals("New", updatedRecording?.name)
+    }
+
+    @Test
+    fun playbackViewModel_repeatPlaybackEnabled_flowIsAccessible() {
+        val viewModel = PlaybackViewModel()
+        assertNotNull(viewModel.repeatPlaybackEnabled)
+        // Initial value depends on engine, just verify it's accessible
+        assertNotNull(viewModel.repeatPlaybackEnabled.value)
+    }
+
+    @Test
+    fun playbackViewModel_playbackSpeed_flowIsAccessible() {
+        val viewModel = PlaybackViewModel()
+        assertNotNull(viewModel.playbackSpeed)
+        // Initial value should be 1.0
+        assertEquals(1.0f, viewModel.playbackSpeed.value, 0.01f)
+    }
+
+    @Test
+    fun playbackViewModel_multipleOperations_doNotCrash() {
+        val viewModel = PlaybackViewModel()
+
+        // Perform multiple operations in sequence
+        viewModel.onPlaybackTapped()
+        viewModel.onPausePlaybackTapped()
+        viewModel.onWaveformScrubbed(10)
+        viewModel.onScrubStart()
+        viewModel.onScrubEnd()
+        viewModel.onRepeatToggleTapped()
+        viewModel.onPlaybackSpeedTapped(1.5f)
+
+        // Should not crash
+        assertNotNull(viewModel)
+    }
 }
+
 

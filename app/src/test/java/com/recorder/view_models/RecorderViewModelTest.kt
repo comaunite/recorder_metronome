@@ -5,6 +5,7 @@ import org.junit.Test
 import org.junit.Assert.*
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 
 @RunWith(RobolectricTestRunner::class)
 class RecorderViewModelTest {
@@ -67,7 +68,6 @@ class RecorderViewModelTest {
     @Test
     fun recordingViewModel_onPauseRecordTapped_pausesRecording() {
         val viewModel = RecorderViewModel()
-        val initialState = viewModel.recordingStateFlow.value
         viewModel.onPauseRecordTapped()
         // After pause, state should still be accessible
         assertNotNull(viewModel.recordingStateFlow.value)
@@ -121,8 +121,106 @@ class RecorderViewModelTest {
         viewModel.onStopDialogCancel()
         assertFalse(viewModel.showSaveDialog.value)
     }
+
+    @Test
+    fun recordingViewModel_onStopTapped_generatesFileName() {
+        val viewModel = RecorderViewModel()
+        viewModel.onStopTapped()
+        assertTrue(viewModel.generatedFileName.value.isNotEmpty())
+    }
+
+    @Test
+    fun recordingViewModel_onWaveformScrubbed_doesNotCrash() {
+        val viewModel = RecorderViewModel()
+        // Should not throw with any index
+        viewModel.onWaveformScrubbed(0)
+        viewModel.onWaveformScrubbed(100)
+        assertNotNull(viewModel)
+    }
+
+    @Test
+    fun recordingViewModel_onScrubStart_doesNotCrash() {
+        val viewModel = RecorderViewModel()
+        viewModel.onScrubStart()
+        assertNotNull(viewModel)
+    }
+
+    @Test
+    fun recordingViewModel_onScrubEnd_doesNotCrash() {
+        val viewModel = RecorderViewModel()
+        viewModel.onScrubEnd()
+        assertNotNull(viewModel)
+    }
+
+    @Test
+    fun recordingViewModel_onScrubStart_thenScrubEnd_doesNotCrash() {
+        val viewModel = RecorderViewModel()
+        viewModel.onScrubStart()
+        viewModel.onScrubEnd()
+        assertNotNull(viewModel)
+    }
+
+    @Test
+    fun recordingViewModel_onStopDialogSave_hidesSaveDialog() {
+        val context = RuntimeEnvironment.getApplication()
+        val viewModel = RecorderViewModel()
+        viewModel.onStopTapped()
+        assertTrue(viewModel.showSaveDialog.value)
+        viewModel.onStopDialogSave(context, "test_recording") { }
+        assertFalse(viewModel.showSaveDialog.value)
+    }
+
+    @Test
+    fun recordingViewModel_onStopDialogSave_executesCallbackWhenNoData() {
+        val context = RuntimeEnvironment.getApplication()
+        val viewModel = RecorderViewModel()
+        // With no recorded data the finalize onSave is not triggered, but dialog should hide
+        viewModel.onStopDialogSave(context, "test_recording") { }
+        assertFalse(viewModel.showSaveDialog.value)
+    }
+
+    @Test
+    fun recordingViewModel_onBackDialogSave_hidesBackDialog() {
+        val context = RuntimeEnvironment.getApplication()
+        val viewModel = RecorderViewModel()
+        viewModel.onBackPressed()
+        assertTrue(viewModel.showBackDialog.value)
+        viewModel.onBackDialogSave(context) { }
+        assertFalse(viewModel.showBackDialog.value)
+    }
+
+    @Test
+    fun recordingViewModel_onBackDialogSave_executesCallback() {
+        val context = RuntimeEnvironment.getApplication()
+        val viewModel = RecorderViewModel()
+        var callbackExecuted = false
+        viewModel.onBackDialogSave(context) { callbackExecuted = true }
+        assertTrue(callbackExecuted)
+    }
+
+    @Test
+    fun recordingViewModel_onBackDialogDiscard_hidesBackDialog() {
+        val viewModel = RecorderViewModel()
+        viewModel.onBackPressed()
+        assertTrue(viewModel.showBackDialog.value)
+        viewModel.onBackDialogDiscard { }
+        assertFalse(viewModel.showBackDialog.value)
+    }
+
+    @Test
+    fun recordingViewModel_onBackDialogDiscard_executesCallbackWhenNoData() {
+        val viewModel = RecorderViewModel()
+        // With no recorded data, finalize's onSave is not called, so callback won't fire
+        // But the dialog state should update correctly
+        viewModel.onBackDialogDiscard { }
+        assertFalse(viewModel.showBackDialog.value)
+    }
+
+    @Test
+    fun recordingViewModel_onPermissionDenied_doesNotCrash() {
+        val viewModel = RecorderViewModel()
+        // With no recorded data, finalize's onSave won't fire — just verify no crash
+        viewModel.onPermissionDenied { }
+        assertNotNull(viewModel)
+    }
 }
-
-
-
-

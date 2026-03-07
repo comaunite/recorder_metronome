@@ -138,5 +138,67 @@ class FormattingHelperTest {
         val result2 = FormattingHelper.formatTimestamp(2000L)
         assertNotEquals(result1, result2)
     }
+
+    @Test
+    fun formatTimestamp_knownEpoch_returnsExpectedFormat() {
+        // Use a fixed date: 2024-06-15 12:30:45 UTC = 1718451045000L
+        val result = FormattingHelper.formatTimestamp(1718451045000L)
+        // Should match dd.MM.yyyy HH:mm:ss — verify structure and content
+        assertTrue("Expected dd.MM.yyyy HH:mm:ss format", result.matches(Regex("""\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}""")))
+    }
+
+    // --- formatFileSize ---
+
+    @Test
+    fun formatFileSize_exactly1024KB_returnsInMB() {
+        // 1024 KB is NOT > 1024, so it should return KB format
+        val result = FormattingHelper.formatFileSize(1024L)
+        assertEquals("1024 KB", result)
+    }
+
+    @Test
+    fun formatFileSize_1025KB_returnsInMB() {
+        // 1025 KB > 1024 → MB branch
+        val result = FormattingHelper.formatFileSize(1025L)
+        assertEquals("1.00 MB", result)
+    }
+
+    @Test
+    fun formatFileSize_2048KB_returnsExactlyTwoMB() {
+        val result = FormattingHelper.formatFileSize(2048L)
+        assertEquals("2.00 MB", result)
+    }
+
+    @Test
+    fun formatFileSize_1536KB_returnsOnePointFiveMB() {
+        // 1536 / 1024 = 1.5
+        val result = FormattingHelper.formatFileSize(1536L)
+        assertEquals("1.50 MB", result)
+    }
+
+    @Test
+    fun formatFileSize_512KB_returnsInKB() {
+        val result = FormattingHelper.formatFileSize(512L)
+        assertEquals("512 KB", result)
+    }
+
+    @Test
+    fun formatFileSize_1KB_returnsOneKB() {
+        val result = FormattingHelper.formatFileSize(1L)
+        assertEquals("1 KB", result)
+    }
+
+    @Test
+    fun formatFileSize_zeroKB_returnsZeroKB() {
+        val result = FormattingHelper.formatFileSize(0L)
+        assertEquals("0 KB", result)
+    }
+
+    @Test
+    fun formatFileSize_largeValue_returnsCorrectMB() {
+        // 10240 KB = 10.00 MB
+        val result = FormattingHelper.formatFileSize(10240L)
+        assertEquals("10.00 MB", result)
+    }
 }
 
