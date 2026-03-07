@@ -186,8 +186,10 @@ class RecorderEngineTest {
     fun loadRecordingForPlayback_multipleLoads_replacePreviousData() {
         val engine = RecorderEngine()
 
-        val audioData1 = ByteArray(100) { 11 }
-        val audioData2 = ByteArray(200) { 22 }
+        // Use significantly larger audio data to ensure different bar counts
+        // At 44100Hz, 16-bit, mono: 88200 bytes = 1 second = 20 bars (at 20 bars/sec)
+        val audioData1 = ByteArray(88200) { 11 }  // 1 second = 20 bars
+        val audioData2 = ByteArray(176400) { 22 } // 2 seconds = 40 bars
 
         val parsed1 = ParsedAudioData(
             audioData = audioData1,

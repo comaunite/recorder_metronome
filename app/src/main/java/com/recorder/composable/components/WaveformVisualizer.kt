@@ -41,80 +41,80 @@ fun WaveformVisualizer(
     val barSpacingPx = remember(density) { with(density) { 1.dp.toPx() } }
     val barFullWidthPx = barWidthPx + barSpacingPx
 
-    var initialTapX by remember { mutableFloatStateOf(0f) }
-    var currentDragX by remember { mutableFloatStateOf(0f) }
-    var isDragging by remember { mutableIntStateOf(0) }
-    var lastUpdateTime by remember { mutableLongStateOf(0L) }
-
-    // Velocity-based seeking: continuously update position based on drag offset
-    LaunchedEffect(isDragging) {
-        if (isDragging > 0) {
-            lastUpdateTime = System.currentTimeMillis()
-            while (isActive && isDragging > 0) {
-                val currentTime = System.currentTimeMillis()
-                val deltaTime = (currentTime - lastUpdateTime) / 1000f // seconds
-                lastUpdateTime = currentTime
-
-                val totalBars = waveformData.amplitudes.size
-                if (totalBars > 0 && barFullWidthPx > 0f && deltaTime > 0f) {
-                    // Calculate offset from initial tap point in pixels
-                    val dragOffset = currentDragX - initialTapX
-
-                    // Convert to bars offset and use as velocity multiplier
-                    // Positive = seeking forward, negative = seeking backward
-                    val barsOffset = dragOffset / barFullWidthPx
-
-                    // Velocity in bars per second (scale factor controls sensitivity)
-                    val velocityScale = 20f // Adjust this to control seeking speed
-                    val barsPerSecond = barsOffset * velocityScale
-
-                    // Calculate how many bars to move this frame
-                    val barsToMove = (barsPerSecond * deltaTime).toInt()
-
-                    if (barsToMove != 0) {
-                        val currentPos = waveformData.currentPosition
-                        val targetIndex = (currentPos + barsToMove).coerceIn(0, totalBars - 1)
-                        onScrubPosition?.invoke(targetIndex)
-                    }
-                }
-
-                delay(16) // ~60fps updates
-            }
-        }
-    }
-
-    val scrubModifier = if (enableScrubbing && onScrubPosition != null) {
-        Modifier.pointerInput(enableScrubbing) {
-            detectDragGestures(
-                onDragStart = { offset ->
-                    onScrubStart?.invoke()
-                    initialTapX = offset.x
-                    currentDragX = offset.x
-                    isDragging++ // Trigger the LaunchedEffect
-                },
-                onDrag = { change, _ ->
-                    // Just update the current drag position
-                    // The LaunchedEffect will handle the velocity-based seeking
-                    currentDragX = change.position.x
-                    change.consume()
-                },
-                onDragEnd = {
-                    isDragging = 0 // Stop the velocity updates
-                    onScrubEnd?.invoke()
-                },
-                onDragCancel = {
-                    isDragging = 0 // Stop the velocity updates
-                    onScrubEnd?.invoke()
-                }
-            )
-        }
-    } else {
-        Modifier
-    }
+//    var initialTapX by remember { mutableFloatStateOf(0f) }
+//    var currentDragX by remember { mutableFloatStateOf(0f) }
+//    var isDragging by remember { mutableIntStateOf(0) }
+//    var lastUpdateTime by remember { mutableLongStateOf(0L) }
+//
+//    // Velocity-based seeking: continuously update position based on drag offset
+//    LaunchedEffect(isDragging) {
+//        if (isDragging > 0) {
+//            lastUpdateTime = System.currentTimeMillis()
+//            while (isActive && isDragging > 0) {
+//                val currentTime = System.currentTimeMillis()
+//                val deltaTime = (currentTime - lastUpdateTime) / 1000f // seconds
+//                lastUpdateTime = currentTime
+//
+//                val totalBars = waveformData.amplitudes.size
+//                if (totalBars > 0 && barFullWidthPx > 0f && deltaTime > 0f) {
+//                    // Calculate offset from initial tap point in pixels
+//                    val dragOffset = currentDragX - initialTapX
+//
+//                    // Convert to bars offset and use as velocity multiplier
+//                    // Positive = seeking forward, negative = seeking backward
+//                    val barsOffset = dragOffset / barFullWidthPx
+//
+//                    // Velocity in bars per second (scale factor controls sensitivity)
+//                    val velocityScale = 20f // Adjust this to control seeking speed
+//                    val barsPerSecond = barsOffset * velocityScale
+//
+//                    // Calculate how many bars to move this frame
+//                    val barsToMove = (barsPerSecond * deltaTime).toInt()
+//
+//                    if (barsToMove != 0) {
+//                        val currentPos = waveformData.currentPosition
+//                        val targetIndex = (currentPos + barsToMove).coerceIn(0, totalBars - 1)
+//                        onScrubPosition?.invoke(targetIndex)
+//                    }
+//                }
+//
+//                delay(16) // ~60fps updates
+//            }
+//        }
+//    }
+//
+//    val scrubModifier = if (enableScrubbing && onScrubPosition != null) {
+//        Modifier.pointerInput(enableScrubbing) {
+//            detectDragGestures(
+//                onDragStart = { offset ->
+//                    onScrubStart?.invoke()
+//                    initialTapX = offset.x
+//                    currentDragX = offset.x
+//                    isDragging++ // Trigger the LaunchedEffect
+//                },
+//                onDrag = { change, _ ->
+//                    // Just update the current drag position
+//                    // The LaunchedEffect will handle the velocity-based seeking
+//                    currentDragX = change.position.x
+//                    change.consume()
+//                },
+//                onDragEnd = {
+//                    isDragging = 0 // Stop the velocity updates
+//                    onScrubEnd?.invoke()
+//                },
+//                onDragCancel = {
+//                    isDragging = 0 // Stop the velocity updates
+//                    onScrubEnd?.invoke()
+//                }
+//            )
+//        }
+//    } else {
+//        Modifier
+//    }
 
     Canvas(
         modifier = modifier
-            .then(scrubModifier)
+            .then(Modifier)
             .fillMaxWidth()
             .height(150.dp)
     ) {

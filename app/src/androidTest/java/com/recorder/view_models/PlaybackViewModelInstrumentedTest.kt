@@ -8,7 +8,6 @@ import com.recorder.util.RecordingState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -56,7 +55,7 @@ class PlaybackViewModelInstrumentedTest {
         // Give it a moment for async operations
         Thread.sleep(500)
 
-        assertEquals("Test Recording", viewModel.currentRecording.value?.name)
+        assertEquals("Test Recording", viewModel.currentRecording.value.name)
         assertFalse(viewModel.accumulatedWaveformData.value.amplitudes.isEmpty())
     }
 
@@ -110,7 +109,7 @@ class PlaybackViewModelInstrumentedTest {
 
         viewModel.updateInMemoryCollections(oldRecording, "New Name")
 
-        assertEquals("New Name", viewModel.currentRecording.value?.name)
+        assertEquals("New Name", viewModel.currentRecording.value.name)
     }
 
     @Test
@@ -143,7 +142,9 @@ class PlaybackViewModelInstrumentedTest {
     @Test
     fun playbackViewModel_currentRecording_updatesOnInitialize() {
         val viewModel = PlaybackViewModel()
-        assertNull(viewModel.currentRecording.value)
+        // Initial state should be an empty RecorderFile
+        assertEquals("", viewModel.currentRecording.value.name)
+        assertEquals("", viewModel.currentRecording.value.filePath)
 
         val wavFile = createTestWavFile(
             fileName = "test.wav",

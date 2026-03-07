@@ -24,7 +24,11 @@ class PlaybackViewModelTest {
     @Test
     fun playbackViewModel_currentRecording_initialState_isNull() {
         val viewModel = PlaybackViewModel()
-        assertNull(viewModel.currentRecording.value)
+        // Initial state is an empty RecorderFile, not null
+        assertEquals("", viewModel.currentRecording.value.name)
+        assertEquals("", viewModel.currentRecording.value.filePath)
+        assertEquals(0L, viewModel.currentRecording.value.durationMs)
+        assertEquals(0L, viewModel.currentRecording.value.createdTime)
     }
 
     @Test
@@ -77,7 +81,7 @@ class PlaybackViewModelTest {
 
         viewModel.updateInMemoryCollections(oldRecording, "New Name")
 
-        assertEquals("New Name", viewModel.currentRecording.value?.name)
+        assertEquals("New Name", viewModel.currentRecording.value.name)
     }
 
     @Test
@@ -94,8 +98,7 @@ class PlaybackViewModelTest {
 
         // File path should be updated with new name
         val newRecording = viewModel.currentRecording.value
-        assertNotNull(newRecording)
-        assertTrue(newRecording!!.filePath.contains("New Name"))
+        assertTrue(newRecording.filePath.contains("New Name"))
     }
 
     @Test
@@ -111,8 +114,7 @@ class PlaybackViewModelTest {
         viewModel.updateInMemoryCollections(oldRecording, "NewName")
 
         val newRecording = viewModel.currentRecording.value
-        assertNotNull(newRecording)
-        assertEquals(5000L, newRecording!!.durationMs)
+        assertEquals(5000L, newRecording.durationMs)
         assertEquals(123456L, newRecording.createdTime)
     }
 
