@@ -16,7 +16,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.ByteArrayOutputStream
+import kotlin.compareTo
 import kotlin.math.abs
+import kotlin.times
 
 enum class RecordingState {
     IDLE, RECORDING, PAUSED, PLAYBACK
@@ -35,6 +37,7 @@ class RecorderEngine {
     private val recordedData = ByteArrayOutputStream()
 
     private var pausedPlaybackPosition = 0L // Remember the position when paused
+    @Volatile private var isScrubbing = false // Prevents playback thread from stomping seek position
     private val maxAmplitude = 10000f
     private val amplitudeList = mutableListOf<Float>() // Persistent amplitude list across pause/resume
     private var totalProcessedBytes = 0L
@@ -80,7 +83,11 @@ class RecorderEngine {
         pausedPlaybackPosition = 0L
 
         recorder = AudioRecord(
-            MediaRecorder.AudioSource.MIC,
+            // Used to be MediaRecorder.AudioSource.MIC,
+            // But that apparently may apply some processing.
+            // Will experiment without, for best capture...
+            // Perhaps this needs to be an option for user
+            MediaRecorder.AudioSource.UNPROCESSED,
             sampleRate,
             AudioFormat.CHANNEL_IN_MONO,
             AudioFormat.ENCODING_PCM_16BIT,
@@ -131,7 +138,6 @@ class RecorderEngine {
             RecordingState.PLAYBACK -> {
                 recordingState.value = RecordingState.PAUSED
                 audioTrack?.pause()
-                audioTrack?.flush()
                 println("PLAYBACK: Paused at ${pausedPlaybackPosition}ms")
             }
             else -> {
@@ -175,31 +181,29 @@ class RecorderEngine {
             return
         }
 
-        // Use the amplitude list that was built during recording
-        // This ensures consistency between recording and playback views
         val amplitudes = if (amplitudeList.isNotEmpty()) {
             amplitudeList.toList()
         } else {
-            // Fallback: generate amplitudes if the list is empty (shouldn't happen normally)
-            // Use consistent waveform resolution (20 bars per second)
             extractAmplitudesFromAudio(audioBytes, sampleRate, 1, 16)
         }
 
-        // Calculate a starting position based on pausedPlaybackPosition
         val totalDurationMs = (audioBytes.size / (sampleRate * 2f) * 1000).toLong()
         val startPositionIndex =
             ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
                 .coerceIn(0, amplitudes.size - 1)
 
-        // Emit complete waveform data ONCE at the start of playback
-        waveformData.value =
-            WaveformData(amplitudes, maxAmplitude, currentPosition = startPositionIndex)
+        waveformData.value = WaveformData(amplitudes, maxAmplitude, currentPosition = startPositionIndex)
+
+        // Wait for any previous playback thread to fully exit and release the AudioTrack.
+        // The old thread must see PAUSED (set by onScrubStart) so its loop condition exits.
+        // Only then flip to PLAYBACK and start the new thread.
+        playbackThread?.join(500)
 
         recordingState.value = RecordingState.PLAYBACK
 
         playbackThread = Thread {
             try {
-                println("PLAYBACK: Starting playback of ${audioBytes.size} bytes from position ${pausedPlaybackPosition}ms")
+                println("PLAYBACK: Starting from ${pausedPlaybackPosition}ms (${audioBytes.size} bytes)")
 
                 val attributes = AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -212,102 +216,89 @@ class RecorderEngine {
                     .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                     .build()
 
-                while (recordingState.value == RecordingState.PLAYBACK) {
-                    val startPositionBytes = ((pausedPlaybackPosition / 1000f) * sampleRate * 2).toInt()
-                        .coerceIn(0, audioBytes.size)
+                // MODE_STATIC: write all audio once, then seek freely with setPlaybackHeadPosition
+                audioTrack = AudioTrack.Builder()
+                    .setAudioAttributes(attributes)
+                    .setAudioFormat(format)
+                    .setBufferSizeInBytes(audioBytes.size)
+                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .build()
 
-                    audioTrack = AudioTrack.Builder()
-                        .setAudioAttributes(attributes)
-                        .setAudioFormat(format)
-                        .setBufferSizeInBytes(audioBytes.size)
-                        .setTransferMode(AudioTrack.MODE_STREAM)
-                        .build()
+                // Write entire file upfront — non-blocking with MODE_STATIC
+                audioTrack?.write(audioBytes, 0, audioBytes.size)
 
-                    println("PLAYBACK: AudioTrack state=${audioTrack?.state}, playState=${audioTrack?.playState}")
-                    println("PLAYBACK: Buffer size=${audioBytes.size}, Sample rate=$sampleRate")
-
-                    audioTrack?.playbackParams = PlaybackParams().apply {
-                        this.speed = playbackSpeed.value
-                    }
-
-                    val bytesToWrite = audioBytes.size - startPositionBytes
-                    var finishedNaturally = false
-
-                    if (bytesToWrite > 0) {
-                        println("PLAYBACK: Writing $bytesToWrite bytes from position $startPositionBytes...")
-                        val written =
-                            audioTrack?.write(audioBytes, startPositionBytes, bytesToWrite) ?: 0
-                        println("PLAYBACK: Written $written bytes")
-
-                        audioTrack?.play()
-                        println("PLAYBACK: Play called, playState=${audioTrack?.playState}")
-
-                        val durationMs = (bytesToWrite.toFloat() / (sampleRate * 2)) * 1000
-                        var lastProgressUpdate = System.currentTimeMillis()
-                        var playTimeMs = 0f
-
-                        while (recordingState.value == RecordingState.PLAYBACK) {
-                            val now = System.currentTimeMillis()
-                            val delta = now - lastProgressUpdate
-                            lastProgressUpdate = now
-                            
-                            // Track how much audio (at 1x speed) has been played
-                            playTimeMs += delta * playbackSpeed.value
-                            
-                            pausedPlaybackPosition = ((startPositionBytes / (sampleRate * 2f) * 1000).toLong() + playTimeMs).toLong()
-                            timestamp.value = pausedPlaybackPosition
-
-                            // Emit ONLY the current position index, not the entire waveform
-                            val currentPosIndex =
-                                ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
-                                    .coerceIn(0, amplitudes.size - 1)
-
-                            playbackPosition.value = PlaybackPosition(currentIndex = currentPosIndex)
-
-                            if (playTimeMs >= durationMs) {
-                                println("PLAYBACK: Reached end of audio")
-                                finishedNaturally = true
-                                break
-                            }
-
-                            Thread.sleep(10) // ~100Hz update for smoother bar tracking
-                        }
-
-                        audioTrack?.stop()
-                        println("PLAYBACK: Stopped")
-                    } else {
-                        println("PLAYBACK: No bytes to write from position $startPositionBytes")
-                        finishedNaturally = true
-                    }
-
-                    audioTrack?.release()
-                    audioTrack = null
-
-                    if (recordingState.value != RecordingState.PLAYBACK) {
-                        println("PLAYBACK: Interrupted at ${pausedPlaybackPosition}ms")
-                        break
-                    }
-
-                    if (finishedNaturally && repeatPlaybackEnabled.value) {
-                        pausedPlaybackPosition = 0L
-                        timestamp.value = 0L
-                        playbackPosition.value = PlaybackPosition(currentIndex = 0)
-                        continue
-                    }
-
-                    if (finishedNaturally) {
-                        recordingState.value = RecordingState.PAUSED
-                        pausedPlaybackPosition = 0L
-                        timestamp.value = 0L
-                        println("PLAYBACK: Finished, reset position")
-                    }
-
-                    break
+                audioTrack?.playbackParams = PlaybackParams().apply {
+                    this.speed = playbackSpeed.value
                 }
+
+                // Seek to the correct start frame
+                val startFrame = ((pausedPlaybackPosition / 1000f) * sampleRate).toInt()
+                    .coerceIn(0, audioBytes.size / 2)
+                audioTrack?.setPlaybackHeadPosition(startFrame)
+
+                audioTrack?.play()
+                println("PLAYBACK: play() called from frame $startFrame (${pausedPlaybackPosition}ms)")
+
+                val totalFrames = audioBytes.size / 2
+                val startPositionMs = pausedPlaybackPosition
+                var lastTick = System.currentTimeMillis()
+                var elapsedMs = 0f
+
+                while (recordingState.value == RecordingState.PLAYBACK) {
+                    val now = System.currentTimeMillis()
+                    elapsedMs += (now - lastTick) * playbackSpeed.value
+                    lastTick = now
+
+                    val posMs = startPositionMs + elapsedMs.toLong()
+                    val posFrame = ((posMs / 1000f) * sampleRate).toInt()
+
+                    // Detect natural end
+                    if (posFrame >= totalFrames) {
+                        println("PLAYBACK: Reached end of audio")
+                        audioTrack?.stop()
+
+                        if (repeatPlaybackEnabled.value) {
+                            pausedPlaybackPosition = 0L
+                            timestamp.value = 0L
+                            playbackPosition.value = PlaybackPosition(currentIndex = 0)
+                            audioTrack?.setPlaybackHeadPosition(0)
+                            audioTrack?.play()
+                            elapsedMs = 0f
+                            lastTick = System.currentTimeMillis()
+                            continue
+                        } else {
+                            recordingState.value = RecordingState.PAUSED
+                            pausedPlaybackPosition = 0L
+                            timestamp.value = 0L
+                            playbackPosition.value = PlaybackPosition(currentIndex = 0)
+                            println("PLAYBACK: Finished, reset position")
+                            break
+                        }
+                    }
+
+                    if (!isScrubbing) {
+                        pausedPlaybackPosition = posMs
+                        timestamp.value = posMs
+
+                        val currentPosIndex = ((posMs.toFloat() / totalDurationMs) * amplitudes.size)
+                            .toInt().coerceIn(0, amplitudes.size - 1)
+                        playbackPosition.value = PlaybackPosition(currentIndex = currentPosIndex)
+                    }
+
+                    Thread.sleep(10)
+                }
+
+                if (recordingState.value != RecordingState.PLAYBACK) {
+                    println("PLAYBACK: Interrupted at ${pausedPlaybackPosition}ms")
+                }
+
             } catch (e: Exception) {
                 println("PLAYBACK ERROR: ${e.message}")
                 e.printStackTrace()
                 recordingState.value = RecordingState.PAUSED
+            } finally {
+                audioTrack?.release()
+                audioTrack = null
             }
         }
         playbackThread?.start()
@@ -462,15 +453,11 @@ class RecorderEngine {
     }
 
     fun seekToWaveformIndex(targetIndex: Int) {
-        val state = recordingState.value
-        if (state != RecordingState.PAUSED && state != RecordingState.PLAYBACK) {
-            return
-        }
+        // Only valid while scrubbing (already paused by onScrubStart)
+        if (!isScrubbing) return
 
         val amplitudes = waveformData.value.amplitudes
-        if (amplitudes.isEmpty()) {
-            return
-        }
+        if (amplitudes.isEmpty()) return
 
         val clampedIndex = targetIndex.coerceIn(0, amplitudes.size - 1)
         val totalDurationMs = ((recordedData.size() / (sampleRate * 2f)) * 1000).toLong()
@@ -480,18 +467,29 @@ class RecorderEngine {
             ((clampedIndex.toFloat() / (amplitudes.size - 1)) * totalDurationMs).toLong()
         }
 
-        val wasPlaying = state == RecordingState.PLAYBACK
-        if (wasPlaying) {
-            pause()
-        }
+        // AudioTrack is already paused by onScrubStart — just reposition the head
+        val targetFrame = ((newPositionMs / 1000f) * sampleRate).toInt()
+            .coerceIn(0, recordedData.size() / 2)
+        audioTrack?.setPlaybackHeadPosition(targetFrame)
 
         pausedPlaybackPosition = newPositionMs
         timestamp.value = newPositionMs
         waveformData.value = waveformData.value.copy(currentPosition = clampedIndex)
         playbackPosition.value = PlaybackPosition(currentIndex = clampedIndex)
+    }
 
+    fun onScrubStart() {
+        val wasPlaying = recordingState.value == RecordingState.PLAYBACK
         if (wasPlaying) {
-            playBackCurrentStream()
+            recordingState.value = RecordingState.PAUSED
+            audioTrack?.pause()
         }
+        isScrubbing = true
+    }
+
+    fun onScrubEnd() {
+        isScrubbing = false
+
+        println("SCRUB: onScrubEnd() at position ${pausedPlaybackPosition}ms")
     }
 }

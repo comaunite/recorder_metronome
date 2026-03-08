@@ -46,8 +46,8 @@ class PlaybackViewModel : ViewModel() {
         // Listen to playback position updates to track the red bar position
         viewModelScope.launch {
             engine.playbackPositionStateFlow.collect { position ->
+                // Only PLAYBACK — never PAUSED. A dying/paused thread can emit stale position=0.
                 if (recordingStateFlow.value == RecordingState.PLAYBACK) {
-                    // Update only the position in the accumulated waveform
                     val current = _accumulatedWaveformData.value
                     _accumulatedWaveformData.value = current.copy(
                         currentPosition = position.currentIndex
@@ -108,27 +108,25 @@ class PlaybackViewModel : ViewModel() {
         return File(parentDir, "$newName.wav").absolutePath
     }
 
-    fun onPlaybackTapped() = engine.playBackCurrentStream()
+    fun onPlaybackTapped() {
+        viewModelScope.launch(Dispatchers.IO) { engine.playBackCurrentStream() }
+    }
+
     fun onPausePlaybackTapped() = engine.pause()
     fun onRepeatToggleTapped() = engine.toggleRepeatPlayback()
     fun onPlaybackSpeedTapped(speed: Float) = engine.setPlaybackSpeed(speed)
     fun onWaveformScrubbed(targetIndex: Int) = engine.seekToWaveformIndex(targetIndex)
 
     fun onScrubStart() {
-        // Remember if we were playing, then pause
         wasPlayingBeforeScrub = recordingStateFlow.value == RecordingState.PLAYBACK
-        println("SCRUB_START: wasPlaying=$wasPlayingBeforeScrub, currentState=${recordingStateFlow.value}")
-        if (wasPlayingBeforeScrub) {
-            engine.pause()
-        }
+        engine.onScrubStart()
     }
 
     fun onScrubEnd() {
-        // Resume playback if we were playing before scrubbing started
-        println("SCRUB_END: wasPlayingBeforeScrub=$wasPlayingBeforeScrub, currentState=${recordingStateFlow.value}")
+        engine.onScrubEnd()
         if (wasPlayingBeforeScrub) {
-            engine.playBackCurrentStream()
             wasPlayingBeforeScrub = false
+            viewModelScope.launch(Dispatchers.IO) { engine.playBackCurrentStream() }
         }
     }
 
