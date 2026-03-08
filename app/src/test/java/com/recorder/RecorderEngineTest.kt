@@ -574,6 +574,7 @@ class RecorderEngineTest {
         val amplitudeCount = engine.waveformDataStateFlow.value.amplitudes.size
         assertTrue(amplitudeCount > 1)
 
+        engine.onScrubStart()
         engine.seekToWaveformIndex(amplitudeCount / 2)
 
         assertEquals(amplitudeCount / 2, engine.waveformDataStateFlow.value.currentPosition)
@@ -590,6 +591,7 @@ class RecorderEngineTest {
         )
         engine.loadRecordingForPlayback(parsed)
 
+        engine.onScrubStart()
         engine.seekToWaveformIndex(0)
 
         assertEquals(0L, engine.timestampStateFlow.value)
@@ -606,6 +608,7 @@ class RecorderEngineTest {
         engine.loadRecordingForPlayback(parsed)
 
         val lastIndex = engine.waveformDataStateFlow.value.amplitudes.size - 1
+        engine.onScrubStart()
         engine.seekToWaveformIndex(lastIndex + 100) // beyond bounds → clamped
 
         assertEquals(lastIndex, engine.waveformDataStateFlow.value.currentPosition)
@@ -621,6 +624,7 @@ class RecorderEngineTest {
         )
         engine.loadRecordingForPlayback(parsed)
 
+        engine.onScrubStart()
         engine.seekToWaveformIndex(-10)
 
         assertEquals(0, engine.waveformDataStateFlow.value.currentPosition)
@@ -637,6 +641,7 @@ class RecorderEngineTest {
         )
         engine.loadRecordingForPlayback(parsed)
 
+        engine.onScrubStart()
         engine.seekToWaveformIndex(0)
 
         assertEquals(0, engine.waveformDataStateFlow.value.currentPosition)
