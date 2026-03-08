@@ -33,7 +33,7 @@
 
         <meta-data
             android:name="author"
-            android:value="Jurijs Kastanovs" />
+            android:value="${authorName}" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

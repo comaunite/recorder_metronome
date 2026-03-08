@@ -10,7 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.recorder.data.WaveformData
 import kotlin.math.abs
+import kotlin.math.sign
 
 @Composable
 fun WaveformVisualizer(
@@ -41,80 +42,90 @@ fun WaveformVisualizer(
     val barSpacingPx = remember(density) { with(density) { 1.dp.toPx() } }
     val barFullWidthPx = barWidthPx + barSpacingPx
 
-//    var initialTapX by remember { mutableFloatStateOf(0f) }
-//    var currentDragX by remember { mutableFloatStateOf(0f) }
-//    var isDragging by remember { mutableIntStateOf(0) }
-//    var lastUpdateTime by remember { mutableLongStateOf(0L) }
-//
-//    // Velocity-based seeking: continuously update position based on drag offset
-//    LaunchedEffect(isDragging) {
-//        if (isDragging > 0) {
-//            lastUpdateTime = System.currentTimeMillis()
-//            while (isActive && isDragging > 0) {
-//                val currentTime = System.currentTimeMillis()
-//                val deltaTime = (currentTime - lastUpdateTime) / 1000f // seconds
-//                lastUpdateTime = currentTime
-//
-//                val totalBars = waveformData.amplitudes.size
-//                if (totalBars > 0 && barFullWidthPx > 0f && deltaTime > 0f) {
-//                    // Calculate offset from initial tap point in pixels
-//                    val dragOffset = currentDragX - initialTapX
-//
-//                    // Convert to bars offset and use as velocity multiplier
-//                    // Positive = seeking forward, negative = seeking backward
-//                    val barsOffset = dragOffset / barFullWidthPx
-//
-//                    // Velocity in bars per second (scale factor controls sensitivity)
-//                    val velocityScale = 20f // Adjust this to control seeking speed
-//                    val barsPerSecond = barsOffset * velocityScale
-//
-//                    // Calculate how many bars to move this frame
-//                    val barsToMove = (barsPerSecond * deltaTime).toInt()
-//
-//                    if (barsToMove != 0) {
-//                        val currentPos = waveformData.currentPosition
-//                        val targetIndex = (currentPos + barsToMove).coerceIn(0, totalBars - 1)
-//                        onScrubPosition?.invoke(targetIndex)
-//                    }
-//                }
-//
-//                delay(16) // ~60fps updates
-//            }
-//        }
-//    }
-//
-//    val scrubModifier = if (enableScrubbing && onScrubPosition != null) {
-//        Modifier.pointerInput(enableScrubbing) {
-//            detectDragGestures(
-//                onDragStart = { offset ->
-//                    onScrubStart?.invoke()
-//                    initialTapX = offset.x
-//                    currentDragX = offset.x
-//                    isDragging++ // Trigger the LaunchedEffect
-//                },
-//                onDrag = { change, _ ->
-//                    // Just update the current drag position
-//                    // The LaunchedEffect will handle the velocity-based seeking
-//                    currentDragX = change.position.x
-//                    change.consume()
-//                },
-//                onDragEnd = {
-//                    isDragging = 0 // Stop the velocity updates
-//                    onScrubEnd?.invoke()
-//                },
-//                onDragCancel = {
-//                    isDragging = 0 // Stop the velocity updates
-//                    onScrubEnd?.invoke()
-//                }
-//            )
-//        }
-//    } else {
-//        Modifier
-//    }
+    // Scrubbing parameters
+    val distanceToReachMaxSpeed = 80
+    val maxBarsPerSecond = 400f
+    // Scrubbing state
+    var isDragging by remember { mutableStateOf(false) }
+    var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+    // Fractional accumulator so slow speeds don't get lost between frames
+    var seekAccumulator by remember { mutableFloatStateOf(0f) }
+    // Local tracked position — updated every tick so the loop always advances
+    // from where we last seeked, not from the stale captured waveformData.currentPosition
+    var localSeekPosition by remember { mutableIntStateOf(0) }
+
+    // Keep localSeekPosition in sync with external position changes
+    // (e.g. normal playback advancing, or initial load) but NOT while we're dragging
+    if (!isDragging) {
+        localSeekPosition = waveformData.currentPosition
+    }
+
+    // Velocity-based seek loop: runs as long as the finger is held down
+    LaunchedEffect(isDragging) {
+        if (isDragging) {
+            // Snapshot the current position when the drag starts
+            localSeekPosition = waveformData.currentPosition
+            seekAccumulator = 0f
+            while (isActive && isDragging) {
+                val totalBars = waveformData.amplitudes.size
+                if (totalBars > 0 && barFullWidthPx > 0f) {
+                    val deadZonePx = with(density) { 8.dp.toPx() }
+                    val maxSpeedPx = with(density) { distanceToReachMaxSpeed.dp.toPx() }
+
+                    val effectiveOffset = when {
+                        abs(dragOffsetPx) < deadZonePx -> 0f
+                        else -> (dragOffsetPx - sign(dragOffsetPx) * deadZonePx) / maxSpeedPx
+                    }.coerceIn(-1f, 1f)
+
+                    val barsPerSecond = effectiveOffset * abs(effectiveOffset) * maxBarsPerSecond
+
+                    // Accumulate fractional bars over the 16 ms frame
+                    seekAccumulator += barsPerSecond * (16 / 1000f)
+                    val barsToMove = seekAccumulator.toInt()
+                    if (barsToMove != 0) {
+                        seekAccumulator -= barsToMove
+                        val targetIndex = (localSeekPosition + barsToMove).coerceIn(0, totalBars - 1)
+                        localSeekPosition = targetIndex
+                        onScrubPosition?.invoke(targetIndex)
+                    }
+                }
+                delay(16L) // ~60 fps
+            }
+        }
+    }
+
+    val scrubModifier = if (enableScrubbing && onScrubPosition != null) {
+        Modifier.pointerInput(enableScrubbing) {
+            detectDragGestures(
+                onDragStart = { _ ->
+                    dragOffsetPx = 0f
+                    seekAccumulator = 0f
+                    isDragging = true
+                    onScrubStart?.invoke()
+                },
+                onDrag = { change, dragAmount ->
+                    dragOffsetPx += dragAmount.x
+                    change.consume()
+                },
+                onDragEnd = {
+                    isDragging = false
+                    dragOffsetPx = 0f
+                    onScrubEnd?.invoke()
+                },
+                onDragCancel = {
+                    isDragging = false
+                    dragOffsetPx = 0f
+                    onScrubEnd?.invoke()
+                }
+            )
+        }
+    } else {
+        Modifier
+    }
 
     Canvas(
         modifier = modifier
-            .then(Modifier)
+            .then(scrubModifier)
             .fillMaxWidth()
             .height(150.dp)
     ) {
@@ -140,23 +151,18 @@ fun WaveformVisualizer(
             val maxAmplitude = waveformData.maxAmplitude.coerceAtLeast(1f)
             val barFullWidth = barWidthPx + barSpacingPx
 
-            // Calculate which bars to draw based on current position
-            // The current position should be at centerX
             val barsToLeft = (centerX / barFullWidth).toInt()
             val barsToRight = ((width - centerX) / barFullWidth).toInt()
 
-            // Calculate the start and end indices for the bars to be drawn
             val startIndex = (currentPosition - barsToLeft).coerceAtLeast(0)
             val endIndex = (currentPosition + barsToRight).coerceAtMost(amplitudes.size - 1)
 
-            // Draw amplitude bars only if we have a valid range
             if (startIndex <= endIndex) {
                 for (i in startIndex..endIndex) {
                     val amplitude = amplitudes[i]
                     val normalized = (abs(amplitude) / maxAmplitude).coerceIn(0f, 1f)
                     val barHeight = (height / 2) * normalized
 
-                    // Calculate x position relative to current position
                     val offsetFromCurrent = i - currentPosition
                     val xPosition = centerX + (offsetFromCurrent * barFullWidth)
 

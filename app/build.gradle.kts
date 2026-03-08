@@ -15,7 +15,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
+        manifestPlaceholders["authorName"] = project.property("project.author").toString()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
