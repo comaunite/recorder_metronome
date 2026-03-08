@@ -83,11 +83,8 @@ class RecorderEngine {
         pausedPlaybackPosition = 0L
 
         recorder = AudioRecord(
-            // Used to be MediaRecorder.AudioSource.MIC,
-            // But that apparently may apply some processing.
-            // Will experiment without, for best capture...
-            // Perhaps this needs to be an option for user
-            MediaRecorder.AudioSource.UNPROCESSED,
+            // May want to also provide option for user to use MediaRecorder.AudioSource.UNPROCESSED
+            MediaRecorder.AudioSource.MIC,
             sampleRate,
             AudioFormat.CHANNEL_IN_MONO,
             AudioFormat.ENCODING_PCM_16BIT,

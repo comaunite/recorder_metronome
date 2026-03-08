@@ -9,6 +9,7 @@ import com.recorder.util.RecorderEngine
 import com.recorder.util.RecordingState
 import com.recorder.data.WaveformData
 import com.recorder.util.RecorderFileUtil
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -63,7 +64,6 @@ class RecorderViewModel : ViewModel() {
         viewModelScope.launch {
             engine.playbackPositionStateFlow.collect { position ->
                 if (recordingStateFlow.value == RecordingState.PLAYBACK) {
-                    // Update only the position in the accumulated waveform
                     val current = _accumulatedWaveformData.value
                     _accumulatedWaveformData.value = current.copy(
                         currentPosition = position.currentIndex
@@ -87,23 +87,22 @@ class RecorderViewModel : ViewModel() {
     fun onRecordTapped() = engine.startOrResumeRecording()
     fun onPauseRecordTapped() = engine.pause()
 
-    fun onPlaybackTapped() = engine.playBackCurrentStream()
+    fun onPlaybackTapped() {
+        viewModelScope.launch(Dispatchers.IO) { engine.playBackCurrentStream() }
+    }
     fun onPausePlaybackTapped() = engine.pause()
     fun onWaveformScrubbed(targetIndex: Int) = engine.seekToWaveformIndex(targetIndex)
 
     fun onScrubStart() {
-        // Remember if we were playing, then pause
         wasPlayingBeforeScrub = recordingStateFlow.value == RecordingState.PLAYBACK
-        if (wasPlayingBeforeScrub) {
-            engine.pause()
-        }
+        engine.onScrubStart()
     }
 
     fun onScrubEnd() {
-        // Resume playback if we were playing before scrubbing started
+        engine.onScrubEnd()
         if (wasPlayingBeforeScrub) {
-            engine.playBackCurrentStream()
             wasPlayingBeforeScrub = false
+            viewModelScope.launch(Dispatchers.IO) { engine.playBackCurrentStream() }
         }
     }
 
