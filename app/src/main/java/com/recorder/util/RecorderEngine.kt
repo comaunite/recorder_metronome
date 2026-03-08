@@ -178,13 +178,20 @@ class RecorderEngine {
             return
         }
 
+        // If position is at or past the end, reset to beginning
+        val totalDurationMs = (audioBytes.size / (sampleRate * 2f) * 1000).toLong()
+        if (pausedPlaybackPosition >= totalDurationMs - 500) {
+            pausedPlaybackPosition = 0L
+            timestamp.value = 0L
+            playbackPosition.value = PlaybackPosition(currentIndex = 0)
+        }
+
         val amplitudes = if (amplitudeList.isNotEmpty()) {
             amplitudeList.toList()
         } else {
             extractAmplitudesFromAudio(audioBytes, sampleRate, 1, 16)
         }
 
-        val totalDurationMs = (audioBytes.size / (sampleRate * 2f) * 1000).toLong()
         val startPositionIndex =
             ((pausedPlaybackPosition.toFloat() / totalDurationMs) * amplitudes.size).toInt()
                 .coerceIn(0, amplitudes.size - 1)
@@ -237,7 +244,7 @@ class RecorderEngine {
                 println("PLAYBACK: play() called from frame $startFrame (${pausedPlaybackPosition}ms)")
 
                 val totalFrames = audioBytes.size / 2
-                val startPositionMs = pausedPlaybackPosition
+                var startPositionMs = pausedPlaybackPosition
                 var lastTick = System.currentTimeMillis()
                 var elapsedMs = 0f
 
@@ -260,15 +267,15 @@ class RecorderEngine {
                             playbackPosition.value = PlaybackPosition(currentIndex = 0)
                             audioTrack?.setPlaybackHeadPosition(0)
                             audioTrack?.play()
+                            startPositionMs = 0L
                             elapsedMs = 0f
                             lastTick = System.currentTimeMillis()
                             continue
                         } else {
                             recordingState.value = RecordingState.PAUSED
-                            pausedPlaybackPosition = 0L
-                            timestamp.value = 0L
-                            playbackPosition.value = PlaybackPosition(currentIndex = 0)
-                            println("PLAYBACK: Finished, reset position")
+                            // Keep position at the end — don't reset to 0
+                            // playBackCurrentStream() will reset if user presses play from the end
+                            println("PLAYBACK: Finished naturally")
                             break
                         }
                     }
@@ -453,7 +460,10 @@ class RecorderEngine {
         // Only valid while scrubbing (already paused by onScrubStart)
         if (!isScrubbing) return
 
-        val amplitudes = waveformData.value.amplitudes
+        val amplitudes = waveformData.value.amplitudes.ifEmpty {
+            // During recording-pause, waveformData is never populated — amplitudeList has everything
+            amplitudeList.toList()
+        }
         if (amplitudes.isEmpty()) return
 
         val clampedIndex = targetIndex.coerceIn(0, amplitudes.size - 1)
@@ -471,7 +481,13 @@ class RecorderEngine {
 
         pausedPlaybackPosition = newPositionMs
         timestamp.value = newPositionMs
-        waveformData.value = waveformData.value.copy(currentPosition = clampedIndex)
+        // Always emit the full waveform with the new position so ViewModel collectors
+        // that gate on isNotEmpty() will accept the update
+        waveformData.value = WaveformData(
+            amplitudes = amplitudes,
+            maxAmplitude = maxAmplitude,
+            currentPosition = clampedIndex
+        )
         playbackPosition.value = PlaybackPosition(currentIndex = clampedIndex)
     }
 
