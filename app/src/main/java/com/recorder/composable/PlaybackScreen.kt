@@ -105,9 +105,12 @@ fun PlaybackScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .weight(1f),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // ── flexible top breathing room ──────────────────────────────
+            Spacer(modifier = Modifier.weight(0.5f))
+
             Text(
                 text = currentRecording.name,
                 style = MaterialTheme.typography.titleMedium,
@@ -121,9 +124,10 @@ fun PlaybackScreen(
                 durationMs = currentRecording.durationMs
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            // ── larger gap: timestamp → waveform ─────────────────────────
+            Spacer(modifier = Modifier.weight(0.5f))
 
-            // Waveform
+            // Waveform (≈ vertical centre of the screen)
             WaveformVisualizer(
                 waveformData = waveformData,
                 modifier = Modifier
@@ -135,7 +139,8 @@ fun PlaybackScreen(
                 onScrubEnd = if (canScrub) ({ viewModel.onScrubEnd() }) else null
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            // ── larger gap: waveform → buttons ───────────────────────────
+            Spacer(modifier = Modifier.weight(1f))
 
             // Playback control buttons
             Row(
@@ -148,21 +153,20 @@ fun PlaybackScreen(
                     RecordingState.RECORDING,
                     RecordingState.PAUSED -> {
                         PlaybackSpeedButton(playbackSpeed) { viewModel.onPlaybackSpeedTapped(it) }
-
                         PlayButtonBig(true, { viewModel.onPlaybackTapped() })
-
                         RepeatToggleButtonSmall(repeatEnabled) { viewModel.onRepeatToggleTapped() }
                     }
 
                     RecordingState.PLAYBACK -> {
                         PlaybackSpeedButton(playbackSpeed) { viewModel.onPlaybackSpeedTapped(it) }
-
                         PauseButtonBig({ viewModel.onPausePlaybackTapped() })
-
                         RepeatToggleButtonSmall(repeatEnabled) { viewModel.onRepeatToggleTapped() }
                     }
                 }
             }
+
+            // ── flexible bottom breathing room ───────────────────────────
+            Spacer(modifier = Modifier.weight(0.5f))
         }
     }
 }

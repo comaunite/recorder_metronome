@@ -98,15 +98,18 @@ fun RecorderScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .weight(1f),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Timestamp Tracker
+            // ── flexible top breathing room ──────────────────────────────
+            Spacer(modifier = Modifier.weight(0.5f))
+
             TimestampDisplay(
                 timestampMs = timestamp
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            // ── larger gap: timestamp → waveform ─────────────────────────
+            Spacer(modifier = Modifier.weight(0.5f))
 
             // Waveform
             WaveformVisualizer(
@@ -120,7 +123,8 @@ fun RecorderScreen(
                 onScrubEnd = if (canScrub) ({ viewModel.onScrubEnd() }) else null
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            // ── larger gap: waveform → buttons ───────────────────────────
+            Spacer(modifier = Modifier.weight(1f))
 
             // Three-button layout with state-based logic
             Row(
@@ -162,6 +166,9 @@ fun RecorderScreen(
                     }
                 }
             }
+
+            // ── flexible bottom breathing room ───────────────────────────
+            Spacer(modifier = Modifier.weight(0.5f))
 
             val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
             val generatedFileName by viewModel.generatedFileName.collectAsStateWithLifecycle()
