@@ -116,11 +116,21 @@ fun DonateDialog(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Support development of this app. I made this as a little side project to learn about Android development and partake in the community. Any support is well appreciated!",
+                text = "I made this app as a little side project to learn about Android development and partake in the community. As well as, the tool that was included in the default applications package was unusable, and I needed a good recorder.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Any support is well appreciated!",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
