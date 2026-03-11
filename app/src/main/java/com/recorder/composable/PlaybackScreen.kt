@@ -32,7 +32,7 @@ import com.recorder.composable.components.RepeatToggleButtonSmall
 import com.recorder.composable.components.TimestampDisplay
 import com.recorder.composable.components.WaveformVisualizer
 import com.recorder.data.RecorderFile
-import com.recorder.util.RecordingState
+import com.recorder.services.RecordingState
 import com.recorder.view_models.FileExplorerViewModel
 import com.recorder.view_models.PlaybackViewModel
 

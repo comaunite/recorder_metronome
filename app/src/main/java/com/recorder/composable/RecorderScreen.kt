@@ -27,17 +27,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.recorder.util.RecordingState
+import com.recorder.services.RecordingState
 import com.recorder.composable.components.PauseButtonSmall
 import com.recorder.composable.components.PauseButtonBig
 import com.recorder.composable.dialogs.ExitRecordingDialog
 import com.recorder.composable.dialogs.StopRecordingDialog
-import com.recorder.util.RecorderFileUtil
+import com.recorder.services.RecorderFileService
 import com.recorder.composable.components.PlayButtonSmall
 import com.recorder.composable.components.RecordButton
 import com.recorder.composable.components.StopButton
 import com.recorder.composable.components.WaveformVisualizer
-import com.recorder.util.ensureRecordingAudioPermissions
+import com.recorder.helpers.ensureRecordingAudioPermissions
 import com.recorder.view_models.RecorderViewModel
 import com.recorder.composable.components.TimestampDisplay
 
@@ -69,7 +69,7 @@ fun RecorderScreen(
 
     LaunchedEffect(Unit) {
         if (shouldLoadRecordings) {
-            existingRecordings = RecorderFileUtil.getRecorderFiles(context)
+            existingRecordings = RecorderFileService.getRecorderFiles(context)
             shouldLoadRecordings = false
         }
 

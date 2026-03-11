@@ -5,10 +5,10 @@ import android.content.Context
 import androidx.annotation.RequiresPermission
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.recorder.util.RecorderEngine
-import com.recorder.util.RecordingState
+import com.recorder.services.RecorderEngine
+import com.recorder.services.RecordingState
 import com.recorder.data.WaveformData
-import com.recorder.util.RecorderFileUtil
+import com.recorder.services.RecorderFileService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -109,7 +109,7 @@ class RecorderViewModel : ViewModel() {
     fun onStopTapped() {
         engine.pause()
 
-        _generatedFileName.value = RecorderFileUtil.generateDefaultFileName()
+        _generatedFileName.value = RecorderFileService.generateDefaultFileName()
         _showSaveDialog.value = true
     }
 
@@ -117,7 +117,7 @@ class RecorderViewModel : ViewModel() {
         _showSaveDialog.value = false
 
         engine.finalize { audioData ->
-            RecorderFileUtil.saveRecording(context, fileName, audioData)
+            RecorderFileService.saveRecording(context, fileName, audioData)
             callback()
         }
     }
@@ -133,9 +133,9 @@ class RecorderViewModel : ViewModel() {
 
     fun onBackDialogSave(context: Context, callback: () -> Unit) {
         _showBackDialog.value = false
-        val fileName = RecorderFileUtil.generateDefaultFileName()
+        val fileName = RecorderFileService.generateDefaultFileName()
         engine.finalize { audioData ->
-            RecorderFileUtil.saveRecording(context, fileName, audioData)
+            RecorderFileService.saveRecording(context, fileName, audioData)
         }
         callback()
     }

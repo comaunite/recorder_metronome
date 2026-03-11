@@ -1,4 +1,4 @@
-package com.recorder.util
+package com.recorder.services
 
 import android.Manifest
 import android.media.AudioAttributes
@@ -16,9 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.ByteArrayOutputStream
-import kotlin.compareTo
 import kotlin.math.abs
-import kotlin.times
 
 enum class RecordingState {
     IDLE, RECORDING, PAUSED, PLAYBACK

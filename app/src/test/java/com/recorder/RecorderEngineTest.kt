@@ -1,8 +1,8 @@
 package com.recorder
 
 import com.recorder.data.ParsedAudioData
-import com.recorder.util.RecorderEngine
-import com.recorder.util.RecordingState
+import com.recorder.services.RecorderEngine
+import com.recorder.services.RecordingState
 import org.junit.Test
 import org.junit.Assert.*
 import org.junit.runner.RunWith

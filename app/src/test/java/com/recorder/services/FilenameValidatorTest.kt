@@ -1,6 +1,7 @@
-package com.recorder.util
+package com.recorder.services
 
 import com.recorder.data.RecorderFile
+import com.recorder.helpers.FilenameValidator
 import org.junit.Test
 import org.junit.Assert.*
 

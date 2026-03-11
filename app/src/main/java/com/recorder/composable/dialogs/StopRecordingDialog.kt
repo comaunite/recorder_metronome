@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.recorder.data.RecorderFile
-import com.recorder.util.FilenameValidator
+import com.recorder.helpers.FilenameValidator
 
 @Composable
 fun StopRecordingDialog(

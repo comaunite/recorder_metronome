@@ -1,5 +1,6 @@
-package com.recorder.util
+package com.recorder.services
 
+import com.recorder.helpers.FormattingHelper
 import org.junit.Test
 import org.junit.Assert.*
 

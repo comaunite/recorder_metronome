@@ -1,6 +1,6 @@
 package com.recorder.view_models
 
-import com.recorder.util.RecordingState
+import com.recorder.services.RecordingState
 import org.junit.Test
 import org.junit.Assert.*
 import org.junit.runner.RunWith

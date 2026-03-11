@@ -47,7 +47,7 @@ import com.recorder.composable.components.RecordButton
 import com.recorder.composable.dialogs.DeleteRecordingDialog
 import com.recorder.composable.dialogs.DonateDialog
 import com.recorder.data.RecorderFile
-import com.recorder.util.FormattingHelper
+import com.recorder.helpers.FormattingHelper
 import com.recorder.view_models.DonationViewModel
 import com.recorder.view_models.FileExplorerViewModel
 

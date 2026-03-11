@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.recorder.data.RecorderFile
-import com.recorder.util.FilenameValidator
+import com.recorder.helpers.FilenameValidator
 
 @Composable
 fun RenameRecordingDialog(

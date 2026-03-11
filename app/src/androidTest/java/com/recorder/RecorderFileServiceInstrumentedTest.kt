@@ -7,13 +7,13 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Assert.*
-import com.recorder.util.RecorderFileUtil
+import com.recorder.services.RecorderFileService
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 @RunWith(AndroidJUnit4::class)
-class RecorderFileUtilInstrumentedTest {
+class RecorderFileServiceInstrumentedTest {
     private lateinit var context: Context
     private lateinit var testDir: File
 
@@ -52,7 +52,7 @@ class RecorderFileUtilInstrumentedTest {
             audioData = ByteArray(100) { 42 }
         )
 
-        val parsed = RecorderFileUtil.readRecorderFile(wavFile.absolutePath)
+        val parsed = RecorderFileService.readRecorderFile(wavFile.absolutePath)
 
         assertEquals(44100, parsed.sampleRate)
         assertEquals(1, parsed.channels)
@@ -69,7 +69,7 @@ class RecorderFileUtilInstrumentedTest {
         val audioData = ByteArray(20) { 55 }
         pcmFile.writeBytes(audioData)
 
-        val parsed = RecorderFileUtil.readRecorderFile(pcmFile.absolutePath)
+        val parsed = RecorderFileService.readRecorderFile(pcmFile.absolutePath)
 
         assertEquals(44100, parsed.sampleRate) // Default fallback
         assertEquals(1, parsed.channels) // Default fallback
@@ -91,7 +91,7 @@ class RecorderFileUtilInstrumentedTest {
         val audioData = ByteArray(100) { 77 }
         invalidFile.writeBytes(header + audioData)
 
-        val parsed = RecorderFileUtil.readRecorderFile(invalidFile.absolutePath)
+        val parsed = RecorderFileService.readRecorderFile(invalidFile.absolutePath)
 
         assertFalse(parsed.hasValidHeader)
         // Should treat entire file as raw PCM (header + audio)
@@ -103,7 +103,7 @@ class RecorderFileUtilInstrumentedTest {
         val nonExistentPath = File(testDir, "non_existent.wav").absolutePath
 
         assertThrows(Exception::class.java) {
-            RecorderFileUtil.readRecorderFile(nonExistentPath)
+            RecorderFileService.readRecorderFile(nonExistentPath)
         }
     }
 
@@ -113,7 +113,7 @@ class RecorderFileUtilInstrumentedTest {
         emptyFile.createNewFile()
 
         assertThrows(Exception::class.java) {
-            RecorderFileUtil.readRecorderFile(emptyFile.absolutePath)
+            RecorderFileService.readRecorderFile(emptyFile.absolutePath)
         }
     }
 
@@ -127,7 +127,7 @@ class RecorderFileUtilInstrumentedTest {
             audioData = ByteArray(200) { 99 }
         )
 
-        val parsed = RecorderFileUtil.readRecorderFile(wavFile.absolutePath)
+        val parsed = RecorderFileService.readRecorderFile(wavFile.absolutePath)
 
         assertEquals(48000, parsed.sampleRate)
         assertEquals(2, parsed.channels)
@@ -146,7 +146,7 @@ class RecorderFileUtilInstrumentedTest {
             audioData = ByteArray(10)
         )
 
-        val smallParsed = RecorderFileUtil.readRecorderFile(smallFile.absolutePath)
+        val smallParsed = RecorderFileService.readRecorderFile(smallFile.absolutePath)
         assertEquals(10, smallParsed.audioData.size)
 
         // Large audio
@@ -158,7 +158,7 @@ class RecorderFileUtilInstrumentedTest {
             audioData = ByteArray(10000)
         )
 
-        val largeParsed = RecorderFileUtil.readRecorderFile(largeFile.absolutePath)
+        val largeParsed = RecorderFileService.readRecorderFile(largeFile.absolutePath)
         assertEquals(10000, largeParsed.audioData.size)
     }
 
@@ -172,8 +172,8 @@ class RecorderFileUtilInstrumentedTest {
             audioData = ByteArray(100) { 88 }
         )
 
-        val parsed1 = RecorderFileUtil.readRecorderFile(wavFile.absolutePath)
-        val parsed2 = RecorderFileUtil.readRecorderFile(wavFile.absolutePath)
+        val parsed1 = RecorderFileService.readRecorderFile(wavFile.absolutePath)
+        val parsed2 = RecorderFileService.readRecorderFile(wavFile.absolutePath)
 
         assertEquals(parsed1.sampleRate, parsed2.sampleRate)
         assertEquals(parsed1.channels, parsed2.channels)

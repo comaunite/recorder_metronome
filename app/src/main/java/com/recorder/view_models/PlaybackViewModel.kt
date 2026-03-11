@@ -1,20 +1,24 @@
 package com.recorder.view_models
 
+import android.app.Application
 import android.content.Context
-import androidx.lifecycle.ViewModel
+import android.content.Intent
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.recorder.data.RecorderFile
 import com.recorder.data.WaveformData
-import com.recorder.util.RecorderEngine
-import com.recorder.util.RecorderFileUtil
-import com.recorder.util.RecordingState
+import com.recorder.services.PlaybackService
+import com.recorder.services.RecorderEngine
+import com.recorder.services.RecorderFileService
+import com.recorder.services.RecordingState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.io.File
 
-class PlaybackViewModel : ViewModel() {
+class PlaybackViewModel(application: Application) : AndroidViewModel(application) {
     private val engine = RecorderEngine()
     val recordingStateFlow = engine.recordingStateFlow
 
@@ -55,7 +59,79 @@ class PlaybackViewModel : ViewModel() {
                 }
             }
         }
+
+        // Drive the foreground-service notification from state + timestamp changes.
+        // The timestamp emits ~every 50 ms during playback; we only push a notification
+        // update when the displayed second changes, or when isPlaying/recording changes.
+        viewModelScope.launch {
+            var lastNotifSec = -1L
+            var lastIsPlaying = false
+
+            combine(recordingStateFlow, timestamp, _currentRecording) { state, ts, rec ->
+                Triple(state, ts, rec)
+            }.collect { (state, ts, rec) ->
+                when (state) {
+                    RecordingState.PLAYBACK, RecordingState.PAUSED -> {
+                        val isPlaying = state == RecordingState.PLAYBACK
+                        val sec = ts / 1000
+                        if (isPlaying != lastIsPlaying || sec != lastNotifSec) {
+                            lastIsPlaying = isPlaying
+                            lastNotifSec = sec
+                            viewModelScope.launch(Dispatchers.IO) {
+                                pushServiceUpdate(rec.name, isPlaying, ts, rec.durationMs)
+                            }
+                        }
+                    }
+                    RecordingState.IDLE -> {
+                        if (lastIsPlaying || lastNotifSec >= 0) {
+                            lastIsPlaying = false
+                            lastNotifSec = -1L
+                            viewModelScope.launch(Dispatchers.IO) { stopNotificationService() }
+                        }
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        // React to play/pause tapped directly on the notification
+        viewModelScope.launch {
+            PlaybackService.playPauseRequested.collect {
+                when (recordingStateFlow.value) {
+                    RecordingState.PLAYBACK -> onPausePlaybackTapped()
+                    RecordingState.PAUSED,
+                    RecordingState.IDLE    -> onPlaybackTapped()
+                    else                   -> {}
+                }
+            }
+        }
     }
+
+    // -------------------------------------------------------------------------
+    // Service helpers
+    // -------------------------------------------------------------------------
+
+    private fun pushServiceUpdate(
+        title: String, isPlaying: Boolean, positionMs: Long, durationMs: Long
+    ) {
+        val ctx = getApplication<Application>()
+        val intent = Intent(ctx, PlaybackService::class.java).apply {
+            putExtra(PlaybackService.EXTRA_TITLE,       title)
+            putExtra(PlaybackService.EXTRA_IS_PLAYING,  isPlaying)
+            putExtra(PlaybackService.EXTRA_POSITION_MS, positionMs)
+            putExtra(PlaybackService.EXTRA_DURATION_MS, durationMs)
+        }
+        ctx.startForegroundService(intent)
+    }
+
+    private fun stopNotificationService() {
+        val ctx = getApplication<Application>()
+        ctx.stopService(Intent(ctx, PlaybackService::class.java))
+    }
+
+    // -------------------------------------------------------------------------
+    // Existing public API (unchanged)
+    // -------------------------------------------------------------------------
 
     fun initialize(
         context: Context,
@@ -66,7 +142,7 @@ class PlaybackViewModel : ViewModel() {
 
         println("PLAYBACK_VM: Initializing with recording: ${recording.name} at ${recording.filePath}")
         try {
-            val parsedAudio = RecorderFileUtil.readRecorderFile(recording.filePath)
+            val parsedAudio = RecorderFileService.readRecorderFile(recording.filePath)
             engine.loadRecordingForPlayback(parsedAudio)
         } catch (e: Exception) {
             println("PLAYBACK_VM: Error loading audio file: ${e.message}")
@@ -78,7 +154,7 @@ class PlaybackViewModel : ViewModel() {
             setExistingRecordings(preLoadedRecordings)
         } else {
             viewModelScope.launch(Dispatchers.IO) {
-                _existingRecordings.value = RecorderFileUtil.getRecorderFiles(context)
+                _existingRecordings.value = RecorderFileService.getRecorderFiles(context)
             }
         }
     }
@@ -113,7 +189,7 @@ class PlaybackViewModel : ViewModel() {
     }
 
     fun onPausePlaybackTapped() = engine.pause()
-    fun onRepeatToggleTapped() = engine.toggleRepeatPlayback()
+    fun onRepeatToggleTapped()  = engine.toggleRepeatPlayback()
     fun onPlaybackSpeedTapped(speed: Float) = engine.setPlaybackSpeed(speed)
     fun onWaveformScrubbed(targetIndex: Int) = engine.seekToWaveformIndex(targetIndex)
 
@@ -132,11 +208,13 @@ class PlaybackViewModel : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
+        stopNotificationService()
         engine.finalize { }
     }
 
     fun onReturnToFileExplorer(callback: () -> Unit) {
-        this.engine.finalize { }
+        stopNotificationService()
+        engine.finalize { }
         callback()
     }
 }

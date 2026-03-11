@@ -1,4 +1,4 @@
-package com.recorder.util
+package com.recorder.services
 
 import com.recorder.data.RecorderFile
 import org.junit.After
@@ -14,7 +14,7 @@ import java.nio.ByteOrder
 import kotlin.io.path.createTempDirectory
 
 @RunWith(RobolectricTestRunner::class)
-class RecorderFileUtilTest {
+class RecorderFileServiceTest {
 
     private lateinit var tempDir: File
 
@@ -75,24 +75,24 @@ class RecorderFileUtilTest {
 
     @Test
     fun generateDefaultFileName_returnsNonEmpty() {
-        assertTrue(RecorderFileUtil.generateDefaultFileName().isNotEmpty())
+        assertTrue(RecorderFileService.generateDefaultFileName().isNotEmpty())
     }
 
     @Test
     fun generateDefaultFileName_startsWithRecording() {
-        assertTrue(RecorderFileUtil.generateDefaultFileName().startsWith("Recording "))
+        assertTrue(RecorderFileService.generateDefaultFileName().startsWith("Recording "))
     }
 
     @Test
     fun generateDefaultFileName_matchesDatePattern() {
-        val result = RecorderFileUtil.generateDefaultFileName()
+        val result = RecorderFileService.generateDefaultFileName()
         assertTrue(result.matches(Regex("Recording \\d{8}_\\d{6}")))
     }
 
     @Test
     fun generateDefaultFileName_calledTwiceWithinSameSecond_samePattern() {
-        val r1 = RecorderFileUtil.generateDefaultFileName()
-        val r2 = RecorderFileUtil.generateDefaultFileName()
+        val r1 = RecorderFileService.generateDefaultFileName()
+        val r2 = RecorderFileService.generateDefaultFileName()
         // Both must match the pattern regardless of whether they differ in value
         assertTrue(r1.matches(Regex("Recording \\d{8}_\\d{6}")))
         assertTrue(r2.matches(Regex("Recording \\d{8}_\\d{6}")))
@@ -100,9 +100,9 @@ class RecorderFileUtilTest {
 
     @Test
     fun generateDefaultFileName_afterOneSecond_returnsDifferentValue() {
-        val r1 = RecorderFileUtil.generateDefaultFileName()
+        val r1 = RecorderFileService.generateDefaultFileName()
         Thread.sleep(1100)
-        val r2 = RecorderFileUtil.generateDefaultFileName()
+        val r2 = RecorderFileService.generateDefaultFileName()
         assertNotEquals(r1, r2)
     }
 
@@ -111,7 +111,7 @@ class RecorderFileUtilTest {
     @Test
     fun getRecordingsDirectory_returnsDirectory() {
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         assertNotNull(dir)
         assertTrue(dir.isDirectory)
     }
@@ -119,15 +119,15 @@ class RecorderFileUtilTest {
     @Test
     fun getRecordingsDirectory_calledTwice_returnsSamePath() {
         val context = RuntimeEnvironment.getApplication()
-        val dir1 = RecorderFileUtil.getRecordingsDirectory(context)
-        val dir2 = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir1 = RecorderFileService.getRecordingsDirectory(context)
+        val dir2 = RecorderFileService.getRecordingsDirectory(context)
         assertEquals(dir1.absolutePath, dir2.absolutePath)
     }
 
     @Test
     fun getRecordingsDirectory_nameIsRecordings() {
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         assertEquals("recordings", dir.name)
     }
 
@@ -137,20 +137,20 @@ class RecorderFileUtilTest {
     fun getRecorderFiles_emptyDirectory_returnsEmptyList() {
         val context = RuntimeEnvironment.getApplication()
         // Ensure directory exists but is empty
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
-        val result = RecorderFileUtil.getRecorderFiles(context)
+        val result = RecorderFileService.getRecorderFiles(context)
         assertTrue(result.isEmpty())
     }
 
     @Test
     fun getRecorderFiles_singleWavFile_returnsOneEntry() {
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
         createWavFile(dir, "test_single")
 
-        val result = RecorderFileUtil.getRecorderFiles(context)
+        val result = RecorderFileService.getRecorderFiles(context)
         assertEquals(1, result.size)
         assertEquals("test_single", result[0].name)
     }
@@ -158,13 +158,13 @@ class RecorderFileUtilTest {
     @Test
     fun getRecorderFiles_nonWavFilesAreIgnored() {
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
         createWavFile(dir, "valid")
         File(dir, "ignore.mp3").writeBytes(ByteArray(10))
         File(dir, "ignore.txt").writeText("text")
 
-        val result = RecorderFileUtil.getRecorderFiles(context)
+        val result = RecorderFileService.getRecorderFiles(context)
         assertEquals(1, result.size)
         assertEquals("valid", result[0].name)
     }
@@ -172,7 +172,7 @@ class RecorderFileUtilTest {
     @Test
     fun getRecorderFiles_multipleWavFiles_sortedNewestFirst() {
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
 
         val older = createWavFile(dir, "older")
@@ -180,7 +180,7 @@ class RecorderFileUtilTest {
         val newer = createWavFile(dir, "newer")
         newer.setLastModified(2_000_000L)
 
-        val result = RecorderFileUtil.getRecorderFiles(context)
+        val result = RecorderFileService.getRecorderFiles(context)
         assertEquals(2, result.size)
         assertEquals("newer", result[0].name)
         assertEquals("older", result[1].name)
@@ -189,11 +189,11 @@ class RecorderFileUtilTest {
     @Test
     fun getRecorderFiles_wavFile_populatesSizeKb() {
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
         createWavFile(dir, "sized", audioData = ByteArray(2048))
 
-        val result = RecorderFileUtil.getRecorderFiles(context)
+        val result = RecorderFileService.getRecorderFiles(context)
         assertEquals(1, result.size)
         assertTrue(result[0].sizeKb > 0)
     }
@@ -201,12 +201,12 @@ class RecorderFileUtilTest {
     @Test
     fun getRecorderFiles_wavFile_populatesDurationMs() {
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
         // 44100 Hz, mono, 16-bit → 88200 bytes/s; use 88200 bytes of audio → 1000 ms
         createWavFile(dir, "duration", audioData = ByteArray(88200))
 
-        val result = RecorderFileUtil.getRecorderFiles(context)
+        val result = RecorderFileService.getRecorderFiles(context)
         assertEquals(1, result.size)
         assertEquals(1000L, result[0].durationMs)
     }
@@ -215,11 +215,11 @@ class RecorderFileUtilTest {
     fun getRecorderFiles_rawPcmWavFile_doesNotCrash() {
         // A file with all-zero header (invalid WAV) should not throw; it falls back
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
         createRawPcmFile(dir, "rawpcm")
 
-        val result = RecorderFileUtil.getRecorderFiles(context)
+        val result = RecorderFileService.getRecorderFiles(context)
         assertEquals(1, result.size)
     }
 
@@ -228,27 +228,27 @@ class RecorderFileUtilTest {
     @Test
     fun saveRecording_emptyAudioData_doesNotCreateFile() {
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
-        RecorderFileUtil.saveRecording(context, "empty", ByteArray(0))
+        RecorderFileService.saveRecording(context, "empty", ByteArray(0))
         assertFalse(File(dir, "empty.wav").exists())
     }
 
     @Test
     fun saveRecording_nonEmptyAudioData_createsWavFile() {
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
-        RecorderFileUtil.saveRecording(context, "saved", ByteArray(100) { 7 })
+        RecorderFileService.saveRecording(context, "saved", ByteArray(100) { 7 })
         assertTrue(File(dir, "saved.wav").exists())
     }
 
     @Test
     fun saveRecording_createdFile_hasWavHeader() {
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
-        RecorderFileUtil.saveRecording(context, "headered", ByteArray(100) { 1 })
+        RecorderFileService.saveRecording(context, "headered", ByteArray(100) { 1 })
         val file = File(dir, "headered.wav")
         val bytes = file.readBytes()
         // First 4 bytes should be "RIFF"
@@ -260,10 +260,10 @@ class RecorderFileUtilTest {
     @Test
     fun saveRecording_createdFile_containsAudioData() {
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
         val audio = ByteArray(50) { 99.toByte() }
-        RecorderFileUtil.saveRecording(context, "audio", audio)
+        RecorderFileService.saveRecording(context, "audio", audio)
         val file = File(dir, "audio.wav")
         val bytes = file.readBytes()
         // Audio data starts after the 44-byte header
@@ -274,10 +274,10 @@ class RecorderFileUtilTest {
     @Test
     fun saveRecording_createdFile_totalSizeIs44PlusAudioLength() {
         val context = RuntimeEnvironment.getApplication()
-        val dir = RecorderFileUtil.getRecordingsDirectory(context)
+        val dir = RecorderFileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
         val audio = ByteArray(256) { 3 }
-        RecorderFileUtil.saveRecording(context, "size_check", audio)
+        RecorderFileService.saveRecording(context, "size_check", audio)
         val file = File(dir, "size_check.wav")
         assertEquals(44L + audio.size, file.length())
     }
@@ -291,7 +291,7 @@ class RecorderFileUtilTest {
         assertTrue(file.exists())
 
         val recording = RecorderFile("to_delete", file.absolutePath, 0L, 0L)
-        RecorderFileUtil.deleteRecording(recording)
+        RecorderFileService.deleteRecording(recording)
         assertFalse(file.exists())
     }
 
@@ -299,7 +299,7 @@ class RecorderFileUtilTest {
     fun deleteRecording_nonExistentFile_doesNotCrash() {
         val recording = RecorderFile("ghost", "/non/existent/path/ghost.wav", 0L, 0L)
         // Should not throw
-        RecorderFileUtil.deleteRecording(recording)
+        RecorderFileService.deleteRecording(recording)
     }
 
     // ─── renameRecording ─────────────────────────────────────────────────────────
@@ -310,7 +310,7 @@ class RecorderFileUtilTest {
         file.writeBytes(ByteArray(10))
 
         val recording = RecorderFile("old", file.absolutePath, 0L, 0L)
-        RecorderFileUtil.renameRecording(recording, "new")
+        RecorderFileService.renameRecording(recording, "new")
 
         assertFalse(file.exists())
         assertTrue(File(tempDir, "new.wav").exists())
@@ -320,7 +320,7 @@ class RecorderFileUtilTest {
     fun renameRecording_nonExistentFile_doesNotCrash() {
         val recording = RecorderFile("ghost", "/non/existent/ghost.wav", 0L, 0L)
         // Should not throw
-        RecorderFileUtil.renameRecording(recording, "newname")
+        RecorderFileService.renameRecording(recording, "newname")
     }
 
     @Test
@@ -332,7 +332,7 @@ class RecorderFileUtilTest {
 
         val recording = RecorderFile("original", original.absolutePath, 0L, 0L)
         // Should swallow the exception internally and not crash
-        RecorderFileUtil.renameRecording(recording, "conflict")
+        RecorderFileService.renameRecording(recording, "conflict")
 
         // Original should still exist because rename was blocked
         assertTrue(original.exists())
@@ -345,7 +345,7 @@ class RecorderFileUtilTest {
     @Test
     fun readRecorderFile_nonExistentFile_throwsException() {
         assertThrows(Exception::class.java) {
-            RecorderFileUtil.readRecorderFile("/no/such/file.wav")
+            RecorderFileService.readRecorderFile("/no/such/file.wav")
         }
     }
 
@@ -354,7 +354,7 @@ class RecorderFileUtilTest {
         val file = File(tempDir, "empty.wav")
         file.writeBytes(ByteArray(0))
         assertThrows(Exception::class.java) {
-            RecorderFileUtil.readRecorderFile(file.absolutePath)
+            RecorderFileService.readRecorderFile(file.absolutePath)
         }
     }
 
@@ -364,7 +364,7 @@ class RecorderFileUtilTest {
         val file = createWavFile(tempDir, "valid", sampleRate = 44100, channels = 1,
             bitsPerSample = 16, audioData = audio)
 
-        val parsed = RecorderFileUtil.readRecorderFile(file.absolutePath)
+        val parsed = RecorderFileService.readRecorderFile(file.absolutePath)
 
         assertTrue(parsed.hasValidHeader)
         assertEquals(44100, parsed.sampleRate)
@@ -380,7 +380,7 @@ class RecorderFileUtilTest {
         val file = createWavFile(tempDir, "stereo", sampleRate = 48000, channels = 2,
             bitsPerSample = 16, audioData = audio)
 
-        val parsed = RecorderFileUtil.readRecorderFile(file.absolutePath)
+        val parsed = RecorderFileService.readRecorderFile(file.absolutePath)
 
         assertTrue(parsed.hasValidHeader)
         assertEquals(48000, parsed.sampleRate)
@@ -393,7 +393,7 @@ class RecorderFileUtilTest {
         val file = File(tempDir, "short.wav")
         file.writeBytes(ByteArray(20) { 5 })
 
-        val parsed = RecorderFileUtil.readRecorderFile(file.absolutePath)
+        val parsed = RecorderFileService.readRecorderFile(file.absolutePath)
 
         assertFalse(parsed.hasValidHeader)
         assertEquals(20, parsed.audioData.size)
@@ -409,7 +409,7 @@ class RecorderFileUtilTest {
         val file = File(tempDir, "zeroed.wav")
         file.writeBytes(ByteArray(100))
 
-        val parsed = RecorderFileUtil.readRecorderFile(file.absolutePath)
+        val parsed = RecorderFileService.readRecorderFile(file.absolutePath)
 
         assertFalse(parsed.hasValidHeader)
         assertEquals(100, parsed.audioData.size)
@@ -424,7 +424,7 @@ class RecorderFileUtilTest {
         val file = File(tempDir, "exact44.wav")
         file.writeBytes(ByteArray(44) { 1 })
 
-        val parsed = RecorderFileUtil.readRecorderFile(file.absolutePath)
+        val parsed = RecorderFileService.readRecorderFile(file.absolutePath)
 
         assertFalse(parsed.hasValidHeader)
         assertEquals(44, parsed.audioData.size)
@@ -435,7 +435,7 @@ class RecorderFileUtilTest {
         val audio = ByteArray(50) { 9 }
         val file = createWavFile(tempDir, "strip_header", audioData = audio)
 
-        val parsed = RecorderFileUtil.readRecorderFile(file.absolutePath)
+        val parsed = RecorderFileService.readRecorderFile(file.absolutePath)
 
         // audioData should be exactly the 50 bytes after the 44-byte header
         assertEquals(50, parsed.audioData.size)
