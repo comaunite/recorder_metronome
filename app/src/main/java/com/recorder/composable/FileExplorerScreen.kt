@@ -11,7 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -19,16 +23,21 @@ import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mwa.clientktx.clientlib.ActivityResultSender
 import com.recorder.composable.components.MoreOptionsMenu
 import com.recorder.composable.components.RecordButton
+import com.recorder.composable.dialogs.DonateDialog
 import com.recorder.data.RecorderFile
 import com.recorder.util.FormattingHelper
+import com.recorder.view_models.DonationViewModel
 import com.recorder.view_models.FileExplorerViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,15 +45,26 @@ import com.recorder.view_models.FileExplorerViewModel
 fun FileExplorerScreen(
     modifier: Modifier = Modifier,
     viewModel: FileExplorerViewModel,
+    donationViewModel: DonationViewModel,
+    activityResultSender: ActivityResultSender,
     onStartRecording: () -> Unit,
     onPlayRecording: (RecorderFile) -> Unit = {}
 ) {
     val context = LocalContext.current
     val recordings by viewModel.recordings.collectAsStateWithLifecycle()
+    var showDonateDialog by remember { mutableStateOf(false) }
 
     // Load recordings when screen is displayed
     LaunchedEffect(Unit) {
         viewModel.loadRecordings(context)
+    }
+
+    if (showDonateDialog) {
+        DonateDialog(
+            viewModel = donationViewModel,
+            activityResultSender = activityResultSender,
+            onDismiss = { showDonateDialog = false }
+        )
     }
 
     Column(
@@ -52,6 +72,15 @@ fun FileExplorerScreen(
     ) {
         TopAppBar(
             title = { Text("Recordings (${recordings.size})") },
+            actions = {
+                IconButton(onClick = { showDonateDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Filled.VolunteerActivism,
+                        contentDescription = "Donate SOL",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         )
 
         // Recordings List

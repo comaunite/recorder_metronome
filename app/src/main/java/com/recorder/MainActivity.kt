@@ -13,11 +13,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
+import com.mwa.clientktx.clientlib.ActivityResultSender
 import com.recorder.composable.FileExplorerScreen
 import com.recorder.composable.PlaybackScreen
 import com.recorder.composable.RecorderScreen
 import com.recorder.data.RecorderFile
 import com.recorder.ui.theme.RecorderTheme
+import com.recorder.view_models.DonationViewModel
 import com.recorder.view_models.FileExplorerViewModel
 import com.recorder.view_models.PlaybackViewModel
 import com.recorder.view_models.RecorderViewModel
@@ -26,6 +28,10 @@ class MainActivity : ComponentActivity() {
     private val recorderViewModel by viewModels<RecorderViewModel>()
     private val fileExplorerViewModel by viewModels<FileExplorerViewModel>()
     private val playbackViewModel by viewModels<PlaybackViewModel>()
+    private val donationViewModel by viewModels<DonationViewModel>()
+
+    // Must be initialised before onStart — field init runs during instantiation, which is before onCreate.
+    private val activityResultSender = ActivityResultSender(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +49,8 @@ class MainActivity : ComponentActivity() {
                             FileExplorerScreen(
                                 modifier = Modifier.padding(innerPadding),
                                 viewModel = fileExplorerViewModel,
+                                donationViewModel = donationViewModel,
+                                activityResultSender = activityResultSender,
                                 onStartRecording = {
                                     currentScreen.value = Screen.Recorder
                                 },
