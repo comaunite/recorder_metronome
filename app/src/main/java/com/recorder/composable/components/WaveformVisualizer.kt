@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.recorder.data.WaveformData
 import kotlin.math.abs
 import kotlin.math.sign
+import kotlin.math.sqrt
 
 @Composable
 fun WaveformVisualizer(
@@ -124,10 +125,7 @@ fun WaveformVisualizer(
     }
 
     Canvas(
-        modifier = modifier
-            .then(scrubModifier)
-            .fillMaxWidth()
-            .height(150.dp)
+        modifier = modifier.then(scrubModifier)
     ) {
         drawRect(color = backgroundColor)
 
@@ -161,7 +159,10 @@ fun WaveformVisualizer(
                 for (i in startIndex..endIndex) {
                     val amplitude = amplitudes[i]
                     val normalized = (abs(amplitude) / maxAmplitude).coerceIn(0f, 1f)
-                    val barHeight = (height / 2) * normalized
+                    // Square-root curve: boosts quiet parts significantly without clipping loud ones.
+                    // e.g. 4% amplitude → 20% bar height instead of 4%.
+                    val scaledNormalized = sqrt(normalized)
+                    val barHeight = (height / 2) * scaledNormalized
 
                     val offsetFromCurrent = i - currentPosition
                     val xPosition = centerX + (offsetFromCurrent * barFullWidth)

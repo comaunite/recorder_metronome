@@ -132,7 +132,7 @@ fun PlaybackScreen(
                 waveformData = waveformData,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp),
+                    .height(220.dp),
                 enableScrubbing = canScrub,
                 onScrubPosition = if (canScrub) ({ viewModel.onWaveformScrubbed(it) }) else null,
                 onScrubStart = if (canScrub) ({ viewModel.onScrubStart() }) else null,
