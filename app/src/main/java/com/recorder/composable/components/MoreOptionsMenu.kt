@@ -35,7 +35,7 @@ fun MoreOptionsMenu(
 
     if (showDeleteDialog) {
         DeleteRecordingDialog(
-            recordingName = recording.name,
+            recordings = listOf(recording),
             onDelete = {
                 showDeleteDialog = false
                 RecorderFileUtil.deleteRecording(recording)

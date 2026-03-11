@@ -100,8 +100,7 @@ class DonationViewModel : ViewModel() {
     }
 
     companion object {
-        /** Replace with your actual Solana mainnet wallet address (base-58, 32–44 chars). */
-        const val DONATION_WALLET = "wallet address"
+        const val DONATION_WALLET = "wallet_address"
         const val SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
         const val LAMPORTS_PER_SOL = 1_000_000_000L
     }
