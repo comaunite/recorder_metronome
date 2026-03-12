@@ -15,10 +15,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.recorder.data.RecorderFile
@@ -33,8 +44,20 @@ fun RenameRecordingDialog(
     renameText: String,
     onRenameTextChange: (String) -> Unit
 ) {
+    // Pre-select all text on first open so the user can just start typing
+    var textFieldValue by remember {
+        mutableStateOf(TextFieldValue(renameText, TextRange(0, renameText.length)))
+    }
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) {
+        delay(50)
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
     val validationResult = FilenameValidator.validateRenameFilename(
-        renameText,
+        textFieldValue.text,
         currentRecording.name,
         existingRecordings
     )
@@ -62,15 +85,20 @@ fun RenameRecordingDialog(
             Spacer(modifier = Modifier.height(16.dp))
 
             TextField(
-                value = renameText,
-                onValueChange = onRenameTextChange,
+                value = textFieldValue,
+                onValueChange = { newValue ->
+                    textFieldValue = newValue
+                    onRenameTextChange(newValue.text)
+                },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
                 label = { Text("Recording name") }
             )
 
             // Display error message
-            if (!isValid && renameText.isNotEmpty()) {
+            if (!isValid && textFieldValue.text.isNotEmpty()) {
                 Text(
                     text = validationResult.errorMessage,
                     color = Color.Red,
@@ -94,7 +122,7 @@ fun RenameRecordingDialog(
                 Button(
                     onClick = {
                         if (isValid) {
-                            onRename(renameText)
+                            onRename(textFieldValue.text)
                         }
                     },
                     enabled = isValid

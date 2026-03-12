@@ -16,12 +16,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 @Composable
 fun ExitRecordingDialog(
+    recordingName: String,
     onSave: () -> Unit,
     onDiscard: () -> Unit,
     onCancel: () -> Unit
@@ -48,8 +50,9 @@ fun ExitRecordingDialog(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Do you want to save this recording?",
-                style = MaterialTheme.typography.bodyMedium
+                text = "Do you want to save this recording as \"$recordingName\"?",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(24.dp))

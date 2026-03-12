@@ -32,7 +32,7 @@ import com.recorder.composable.components.PauseButtonSmall
 import com.recorder.composable.components.PauseButtonBig
 import com.recorder.composable.dialogs.ExitRecordingDialog
 import com.recorder.composable.dialogs.StopRecordingDialog
-import com.recorder.services.RecorderFileService
+import com.recorder.services.FileService
 import com.recorder.composable.components.PlayButtonSmall
 import com.recorder.composable.components.RecordButton
 import com.recorder.composable.components.StopButton
@@ -69,7 +69,7 @@ fun RecorderScreen(
 
     LaunchedEffect(Unit) {
         if (shouldLoadRecordings) {
-            existingRecordings = RecorderFileService.getRecorderFiles(context)
+            existingRecordings = FileService.getRecorderFiles(context)
             shouldLoadRecordings = false
         }
 
@@ -188,6 +188,7 @@ fun RecorderScreen(
 
             if (showBackDialog) {
                 ExitRecordingDialog(
+                    recordingName = generatedFileName,
                     onSave = {
                         viewModel.onBackDialogSave(context) {
                             onNavigateBack()

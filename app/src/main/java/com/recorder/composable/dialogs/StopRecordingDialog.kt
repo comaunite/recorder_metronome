@@ -12,16 +12,23 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.recorder.data.RecorderFile
 import com.recorder.helpers.FilenameValidator
+import kotlinx.coroutines.delay
 
 @Composable
 fun StopRecordingDialog(
@@ -30,8 +37,18 @@ fun StopRecordingDialog(
     preGeneratedName: String = "",
     existingRecordings: List<RecorderFile> = emptyList()
 ) {
-    var fileName by remember { mutableStateOf(preGeneratedName) }
-    val validationResult = FilenameValidator.validateNewFilename(fileName, existingRecordings)
+    var fileNameValue by remember {
+        mutableStateOf(TextFieldValue(preGeneratedName, TextRange(0, preGeneratedName.length)))
+    }
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) {
+        delay(50)
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
+    val validationResult = FilenameValidator.validateNewFilename(fileNameValue.text, existingRecordings)
     val isValid = validationResult.isValid
 
     AlertDialog(
@@ -46,19 +63,21 @@ fun StopRecordingDialog(
             ) {
                 Text("Enter a name for your recording:")
                 OutlinedTextField(
-                    value = fileName,
-                    onValueChange = { fileName = it },
+                    value = fileNameValue,
+                    onValueChange = { fileNameValue = it },
                     label = { Text("Recording Name") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(
-                        onDone = { if (isValid) onSave(fileName) }
+                        onDone = { if (isValid) onSave(fileNameValue.text) }
                     )
                 )
 
                 // Display error message
-                if (!isValid && fileName.isNotEmpty()) {
+                if (!isValid && fileNameValue.text.isNotEmpty()) {
                     Text(
                         text = validationResult.errorMessage,
                         color = Color.Red,
@@ -70,7 +89,7 @@ fun StopRecordingDialog(
         },
         confirmButton = {
             Button(
-                onClick = { if (isValid) onSave(fileName) },
+                onClick = { if (isValid) onSave(fileNameValue.text) },
                 enabled = isValid
             ) {
                 Text("Save")

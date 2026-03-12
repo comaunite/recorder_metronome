@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.recorder.services.RecorderEngine
 import com.recorder.services.RecordingState
 import com.recorder.data.WaveformData
-import com.recorder.services.RecorderFileService
+import com.recorder.services.FileService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -109,7 +109,7 @@ class RecorderViewModel : ViewModel() {
     fun onStopTapped() {
         engine.pause()
 
-        _generatedFileName.value = RecorderFileService.generateDefaultFileName()
+        _generatedFileName.value = FileService.generateDefaultFileName()
         _showSaveDialog.value = true
     }
 
@@ -117,7 +117,7 @@ class RecorderViewModel : ViewModel() {
         _showSaveDialog.value = false
 
         engine.finalize { audioData ->
-            RecorderFileService.saveRecording(context, fileName, audioData)
+            FileService.saveRecording(context, fileName, audioData)
             callback()
         }
     }
@@ -128,14 +128,15 @@ class RecorderViewModel : ViewModel() {
 
     fun onBackPressed() {
         engine.pause()
+        _generatedFileName.value = FileService.generateDefaultFileName()
         _showBackDialog.value = true
     }
 
     fun onBackDialogSave(context: Context, callback: () -> Unit) {
         _showBackDialog.value = false
-        val fileName = RecorderFileService.generateDefaultFileName()
+        val fileName = _generatedFileName.value.ifEmpty { FileService.generateDefaultFileName() }
         engine.finalize { audioData ->
-            RecorderFileService.saveRecording(context, fileName, audioData)
+            FileService.saveRecording(context, fileName, audioData)
         }
         callback()
     }

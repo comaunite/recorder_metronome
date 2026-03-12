@@ -9,7 +9,7 @@ import com.recorder.data.RecorderFile
 import com.recorder.data.WaveformData
 import com.recorder.services.PlaybackService
 import com.recorder.services.RecorderEngine
-import com.recorder.services.RecorderFileService
+import com.recorder.services.FileService
 import com.recorder.services.RecordingState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -142,7 +142,7 @@ class PlaybackViewModel(application: Application) : AndroidViewModel(application
 
         println("PLAYBACK_VM: Initializing with recording: ${recording.name} at ${recording.filePath}")
         try {
-            val parsedAudio = RecorderFileService.readRecorderFile(recording.filePath)
+            val parsedAudio = FileService.readRecorderFile(recording.filePath)
             engine.loadRecordingForPlayback(parsedAudio)
         } catch (e: Exception) {
             println("PLAYBACK_VM: Error loading audio file: ${e.message}")
@@ -154,7 +154,7 @@ class PlaybackViewModel(application: Application) : AndroidViewModel(application
             setExistingRecordings(preLoadedRecordings)
         } else {
             viewModelScope.launch(Dispatchers.IO) {
-                _existingRecordings.value = RecorderFileService.getRecorderFiles(context)
+                _existingRecordings.value = FileService.getRecorderFiles(context)
             }
         }
     }

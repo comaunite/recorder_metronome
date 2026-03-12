@@ -17,7 +17,7 @@ import androidx.compose.runtime.setValue
 import com.recorder.composable.dialogs.DeleteRecordingDialog
 import com.recorder.composable.dialogs.RenameRecordingDialog
 import com.recorder.data.RecorderFile
-import com.recorder.services.RecorderFileService
+import com.recorder.services.FileService
 
 @Composable
 fun MoreOptionsMenu(
@@ -38,7 +38,7 @@ fun MoreOptionsMenu(
             recordings = listOf(recording),
             onDelete = {
                 showDeleteDialog = false
-                RecorderFileService.deleteRecording(recording)
+                FileService.deleteRecording(recording)
                 onDeleteSuccess()
             },
             onCancel = { showDeleteDialog = false }
@@ -52,7 +52,7 @@ fun MoreOptionsMenu(
             renameText = renameText,
             onRename = { newName ->
                 showRenameDialog = false
-                RecorderFileService.renameRecording(recording, newName)
+                FileService.renameRecording(recording, newName)
                 onRenameSuccess(newName)
             },
             onRenameTextChange = { renameText = it },
@@ -93,7 +93,7 @@ fun MoreOptionsMenu(
                 text = { Text("Share") },
                 onClick = {
                     menuExpanded = false
-                    RecorderFileService.shareRecording(context, recording)
+                    FileService.shareRecording(context, recording)
                 }
             )
         }

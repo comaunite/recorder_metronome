@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.recorder.data.RecorderFile
-import com.recorder.services.RecorderFileService
+import com.recorder.services.FileService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,15 +16,15 @@ class FileExplorerViewModel : ViewModel() {
 
     fun loadRecordings(context: Context) {
         viewModelScope.launch {
-            val recorderFiles = RecorderFileService.getRecorderFiles(context)
+            val recorderFiles = FileService.getRecorderFiles(context)
             _recordings.value = recorderFiles
         }
     }
 
     fun deleteRecordings(context: Context, toDelete: List<RecorderFile>) {
         viewModelScope.launch(Dispatchers.IO) {
-            toDelete.forEach { RecorderFileService.deleteRecording(it) }
-            val recorderFiles = RecorderFileService.getRecorderFiles(context)
+            toDelete.forEach { FileService.deleteRecording(it) }
+            val recorderFiles = FileService.getRecorderFiles(context)
             _recordings.value = recorderFiles
         }
     }
