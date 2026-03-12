@@ -15,20 +15,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.RemoveCircle
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ripple
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,8 +44,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mwa.clientktx.clientlib.ActivityResultSender
@@ -65,6 +75,19 @@ fun FileExplorerScreen(
     val recordings by viewModel.recordings.collectAsStateWithLifecycle()
     var showDonateDialog by remember { mutableStateOf(false) }
 
+    // ---- Search state ----
+    var searchMode by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    val searchFocusRequester = remember { FocusRequester() }
+
+    val displayedRecordings = remember(recordings, searchQuery, searchMode) {
+        if (searchMode && searchQuery.isNotEmpty()) {
+            recordings.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        } else {
+            recordings
+        }
+    }
+
     // ---- Selection state ----
     var selectionMode by remember { mutableStateOf(false) }
     var selectedPaths by remember { mutableStateOf(emptySet<String>()) }
@@ -84,10 +107,15 @@ fun FileExplorerScreen(
         )
     }
 
-    // Exit selection mode on back press
-    BackHandler(enabled = selectionMode) {
-        selectionMode = false
-        selectedPaths = emptySet()
+    // Exit selection mode on back press; exit search mode if not in selection mode
+    BackHandler(enabled = selectionMode || searchMode) {
+        if (selectionMode) {
+            selectionMode = false
+            selectedPaths = emptySet()
+        } else if (searchMode) {
+            searchMode = false
+            searchQuery = ""
+        }
     }
 
     // Load recordings when screen is displayed
@@ -107,6 +135,18 @@ fun FileExplorerScreen(
         TopAppBar(
             title = { Text("Recordings (${recordings.size})") },
             actions = {
+                // Search toggle button
+                IconButton(onClick = {
+                    searchMode = !searchMode
+                    if (!searchMode) searchQuery = ""
+                }) {
+                    Icon(
+                        imageVector = if (searchMode) Icons.Filled.Close else Icons.Filled.Search,
+                        contentDescription = if (searchMode) "Close search" else "Search recordings",
+                        tint = if (searchMode) MaterialTheme.colorScheme.primary
+                               else MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 IconButton(onClick = { showDonateDialog = true }) {
                     Icon(
                         imageVector = Icons.Filled.VolunteerActivism,
@@ -116,6 +156,53 @@ fun FileExplorerScreen(
                 }
             }
         )
+
+        // ---- Search bar (visible only in search mode) ----
+        if (searchMode) {
+            LaunchedEffect(Unit) { searchFocusRequester.requestFocus() }
+            TextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .focusRequester(searchFocusRequester),
+                placeholder = {
+                    Text(
+                        "Search recordings…",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = "Clear search",
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                shape = RoundedCornerShape(50),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent
+                ),
+                textStyle = MaterialTheme.typography.bodyMedium
+            )
+            HorizontalDivider()
+        }
 
         // ---- Selection toolbar (visible only in selection mode) ----
         if (selectionMode) {
@@ -139,10 +226,11 @@ fun FileExplorerScreen(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = ripple(bounded = false)
                     ) {
-                        selectedPaths = if (selectAllState == ToggleableState.On) {
-                            emptySet()
+                        if (selectAllState == ToggleableState.On) {
+                            selectedPaths = emptySet()
+                            selectionMode = false
                         } else {
-                            recordings.map { it.filePath }.toSet()
+                            selectedPaths = recordings.map { it.filePath }.toSet()
                         }
                     }
                 ) {
@@ -184,6 +272,13 @@ fun FileExplorerScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            } else if (displayedRecordings.isEmpty()) {
+                Text(
+                    text = "No recordings match \"$searchQuery\"",
+                    modifier = Modifier.align(Alignment.Center),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -192,7 +287,7 @@ fun FileExplorerScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp)
                 ) {
-                    items(recordings, key = { it.filePath }) { recording ->
+                    items(displayedRecordings, key = { it.filePath }) { recording ->
                         RecorderFileItem(
                             recording = recording,
                             recordings = recordings,
