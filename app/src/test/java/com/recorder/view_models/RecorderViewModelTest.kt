@@ -105,6 +105,13 @@ class RecorderViewModelTest {
     }
 
     @Test
+    fun recordingViewModel_onBackPressed_generatesFileName() {
+        val viewModel = RecorderViewModel()
+        viewModel.onBackPressed()
+        assertTrue(viewModel.generatedFileName.value.isNotEmpty())
+    }
+
+    @Test
     fun recordingViewModel_onBackDialogCancel_hidesBackDialog() {
         val viewModel = RecorderViewModel()
         viewModel.onBackPressed() // Show dialog first

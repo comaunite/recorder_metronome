@@ -203,8 +203,8 @@ class FileServiceTest {
         val context = RuntimeEnvironment.getApplication()
         val dir = FileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
-        // 48000 Hz, mono, 16-bit → 88200 bytes/s; use 88200 bytes of audio → 1000 ms
-        createWavFile(dir, "duration", audioData = ByteArray(88200))
+        // 48000 Hz, mono, 16-bit → 96000 bytes/s; use 96000 bytes of audio → 1000 ms
+        createWavFile(dir, "duration", audioData = ByteArray(96000))
 
         val result = FileService.getRecorderFiles(context)
         assertEquals(1, result.size)

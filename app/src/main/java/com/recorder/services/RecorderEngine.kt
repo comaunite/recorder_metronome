@@ -1,12 +1,17 @@
 package com.recorder.services
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioDeviceInfo
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.media.PlaybackParams
+import android.os.Build
 import androidx.annotation.RequiresPermission
 import com.recorder.data.ParsedAudioData
 import com.recorder.data.PlaybackPosition
@@ -33,6 +38,8 @@ class RecorderEngine {
     private var audioTrack: AudioTrack? = null
     private var playbackThread: Thread? = null
     private val recordedData = ByteArrayOutputStream()
+    private var audioManager: AudioManager? = null
+    private var bluetoothScoStarted = false
 
     private var pausedPlaybackPosition = 0L // Remember the position when paused
     @Volatile private var isScrubbing = false // Prevents playback thread from stomping seek position
@@ -62,7 +69,7 @@ class RecorderEngine {
     val timestampStateFlow = timestamp.asStateFlow()
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
-    fun startOrResumeRecording() {
+    fun startOrResumeRecording(context: Context) {
         if (recordingState.value == RecordingState.RECORDING) {
             println("RECORDING: Already recording, ignoring request")
             return
@@ -80,24 +87,71 @@ class RecorderEngine {
 
         pausedPlaybackPosition = 0L
 
-        recorder = AudioRecord(
-            // May want to also provide option for user to use MediaRecorder.AudioSource.UNPROCESSED
-            MediaRecorder.AudioSource.MIC,
-            sampleRate,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT,
-            bufferSize
-        )
+        // ── Bluetooth mic detection (fast — just reads a device list) ──────────
+        val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioManager = am
+        val btDevice = findBluetoothInputDevice(am)
 
-        recorder?.startRecording()
+        // Start SCO for classic BT headsets; BLE Audio devices don't need it
+        var justStartedSco = false
+        if (btDevice?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+            if (!bluetoothScoStarted) {
+                // Fresh start — establish the SCO connection and wait for it to come up.
+                @Suppress("DEPRECATION")
+                am.startBluetoothSco()
+                @Suppress("DEPRECATION")
+                am.isBluetoothScoOn = true
+                bluetoothScoStarted = true
+                justStartedSco = true
+                println("BT: SCO requested for '${btDevice.productName}'")
+            } else {
+                // SCO already active (resuming after in-recorder playback) — no sleep needed.
+                println("BT: SCO already active for '${btDevice.productName}'")
+            }
+        } else if (btDevice != null) {
+            println("BT: Using Bluetooth mic '${btDevice.productName}' (BLE, no SCO needed)")
+        } else {
+            println("RECORDING: No Bluetooth mic found, using built-in microphone")
+        }
+
+        // Set state before spawning thread so duplicate taps are rejected
         recordingState.value = RecordingState.RECORDING
 
         recordingThread = Thread {
+            // Give SCO time to establish the connection before opening AudioRecord
+            if (justStartedSco) {
+                println("BT: Waiting 600 ms for SCO to connect…")
+                Thread.sleep(600)
+            }
+
+            // Bail out if the user paused/discarded while we were waiting
+            if (recordingState.value != RecordingState.RECORDING) {
+                println("RECORDING: Aborted during BT setup")
+                return@Thread
+            }
+
+            @SuppressLint("MissingPermission") // permission already checked by caller
+            val rec = AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                sampleRate,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                bufferSize
+            )
+            recorder = rec
+
+            if (btDevice != null) {
+                val ok = rec.setPreferredDevice(btDevice)
+                println("BT: setPreferredDevice('${btDevice.productName}') → $ok")
+            }
+
+            rec.startRecording()
+
             val buffer = ByteArray(bufferSize)
             val bytesPerMs = (sampleRate * 2) / 1000f // 2 bytes per sample (16-bit mono)
             var lastWaveformUpdate = System.currentTimeMillis()
 
-            println("RECORDING: Started recording")
+            println("RECORDING: Started${if (btDevice != null) " via Bluetooth mic '${btDevice.productName}'" else ""}")
 
             while (recordingState.value == RecordingState.RECORDING) {
                 val read = recorder?.read(buffer, 0, buffer.size) ?: 0
@@ -120,7 +174,7 @@ class RecorderEngine {
 
             cleanupRecorder()
 
-            println("RECORDING: Stopped recording")
+            println("RECORDING: Stopped")
         }.also { it.start() }
     }
 
@@ -228,6 +282,19 @@ class RecorderEngine {
 
                 // Write entire file upfront — non-blocking with MODE_STATIC
                 audioTrack?.write(audioBytes, 0, audioBytes.size)
+
+                // When BT SCO is active the audio system may route USAGE_MEDIA to the
+                // BT voice channel (or nowhere). Pin the track explicitly to the built-in
+                // speaker so in-recorder preview always comes out of the phone.
+                if (bluetoothScoStarted) {
+                    val speakerDevice = audioManager
+                        ?.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+                        ?.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+                    if (speakerDevice != null) {
+                        audioTrack?.setPreferredDevice(speakerDevice)
+                        println("BT: AudioTrack pinned to built-in speaker for in-recorder playback")
+                    }
+                }
 
                 audioTrack?.playbackParams = PlaybackParams().apply {
                     this.speed = playbackSpeed.value
@@ -343,7 +410,7 @@ class RecorderEngine {
         channels: Int,
         bitsPerSample: Int
     ): List<Float> {
-        val durationSeconds = (audioData.size / (sampleRate * channels * (bitsPerSample / 8))).toFloat()
+        val durationSeconds = audioData.size.toFloat() / (sampleRate * channels * (bitsPerSample / 8)).toFloat()
         val targetBarCount = (durationSeconds * (1000 / waveformResolutionInMs)).toInt().coerceAtLeast(1)
         return extractAmplitudes(audioData, sampleCount = targetBarCount)
     }
@@ -376,6 +443,24 @@ class RecorderEngine {
         return amplitudes
     }
 
+    private fun findBluetoothInputDevice(audioManager: AudioManager): AudioDeviceInfo? =
+        audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS).firstOrNull { device ->
+            device.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                device.type == AudioDeviceInfo.TYPE_BLE_HEADSET)
+        }
+
+    private fun stopBluetoothSco() {
+        if (bluetoothScoStarted) {
+            @Suppress("DEPRECATION")
+            audioManager?.isBluetoothScoOn = false
+            @Suppress("DEPRECATION")
+            audioManager?.stopBluetoothSco()
+            bluetoothScoStarted = false
+            println("BT: SCO stopped")
+        }
+    }
+
     fun finalize(onSave: (ByteArray) -> Unit) {
         recordingState.value = RecordingState.IDLE
 
@@ -399,6 +484,8 @@ class RecorderEngine {
         playbackSpeed.value = 1.0f
 
         cleanupRecorder()
+
+        stopBluetoothSco()
 
         if (data.isNotEmpty()) {
             onSave(data)

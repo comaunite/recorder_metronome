@@ -62,7 +62,7 @@ fun RecorderScreen(
 
     val handleRecordAction = ensureRecordingAudioPermissions(context, {
         @SuppressLint("MissingPermission")
-        viewModel.onRecordTapped()
+        viewModel.onRecordTapped(context)
     }, {
         viewModel.onPermissionDenied(onNavigateBack)
     })

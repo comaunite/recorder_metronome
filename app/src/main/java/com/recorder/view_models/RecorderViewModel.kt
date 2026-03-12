@@ -84,7 +84,7 @@ class RecorderViewModel : ViewModel() {
 
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
-    fun onRecordTapped() = engine.startOrResumeRecording()
+    fun onRecordTapped(context: Context) = engine.startOrResumeRecording(context)
     fun onPauseRecordTapped() = engine.pause()
 
     fun onPlaybackTapped() {

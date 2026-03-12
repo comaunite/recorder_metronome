@@ -279,6 +279,67 @@ class FileExplorerViewModelInstrumentedTest {
             10, recordings.size)
     }
 
+    // ── deleteRecordings ─────────────────────────────────────────────────────────
+
+    @Test
+    fun fileExplorerViewModel_deleteRecordings_removesFileFromDiskAndList() = runBlocking {
+        recordingsDir.listFiles()?.forEach { it.delete() }
+
+        createTestWavFile("to_delete.wav", ByteArray(1000) { 1 })
+        createTestWavFile("to_keep.wav",   ByteArray(1000) { 2 })
+
+        viewModel.loadRecordings(context)
+        Thread.sleep(200)
+        assertEquals(2, viewModel.recordings.value.size)
+
+        val toDelete = viewModel.recordings.value.filter { it.name == "to_delete" }
+        viewModel.deleteRecordings(context, toDelete)
+        Thread.sleep(200)
+
+        assertEquals(1, viewModel.recordings.value.size)
+        assertEquals("to_keep", viewModel.recordings.value[0].name)
+        assertFalse("File must be removed from disk", File(recordingsDir, "to_delete.wav").exists())
+        assertTrue("Sibling file must survive", File(recordingsDir, "to_keep.wav").exists())
+    }
+
+    @Test
+    fun fileExplorerViewModel_deleteRecordings_multipleAtOnce_removesAll() = runBlocking {
+        recordingsDir.listFiles()?.forEach { it.delete() }
+
+        createTestWavFile("del1.wav", ByteArray(500) { 1 })
+        createTestWavFile("del2.wav", ByteArray(500) { 2 })
+        createTestWavFile("keep.wav", ByteArray(500) { 3 })
+
+        viewModel.loadRecordings(context)
+        Thread.sleep(200)
+        assertEquals(3, viewModel.recordings.value.size)
+
+        val toDelete = viewModel.recordings.value.filter { it.name.startsWith("del") }
+        assertEquals(2, toDelete.size)
+        viewModel.deleteRecordings(context, toDelete)
+        Thread.sleep(200)
+
+        assertEquals(1, viewModel.recordings.value.size)
+        assertEquals("keep", viewModel.recordings.value[0].name)
+        assertFalse(File(recordingsDir, "del1.wav").exists())
+        assertFalse(File(recordingsDir, "del2.wav").exists())
+    }
+
+    @Test
+    fun fileExplorerViewModel_deleteRecordings_emptyList_doesNotCrash() = runBlocking {
+        recordingsDir.listFiles()?.forEach { it.delete() }
+        createTestWavFile("safe.wav", ByteArray(500) { 9 })
+
+        viewModel.loadRecordings(context)
+        Thread.sleep(200)
+
+        // Deleting nothing should not crash and should leave the list intact
+        viewModel.deleteRecordings(context, emptyList())
+        Thread.sleep(200)
+
+        assertEquals(1, viewModel.recordings.value.size)
+    }
+
     /**
      * Helper function to create a test WAV file with valid header
      */

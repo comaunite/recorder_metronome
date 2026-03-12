@@ -3,11 +3,13 @@ package com.recorder
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.recorder.data.RecorderFile
+import com.recorder.services.FileService
+import org.junit.After
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.Assert.*
-import com.recorder.services.FileService
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -27,6 +29,15 @@ class FileServiceInstrumentedTest {
             // Clean up previous test files
             testDir.listFiles()?.forEach { it.delete() }
         }
+    }
+
+    @After
+    fun tearDown() {
+        // Remove anything left in the real recordings dir by these tests
+        FileService.getRecordingsDirectory(context).listFiles()
+            ?.filter { it.name.startsWith("_instr_test_") }
+            ?.forEach { it.delete() }
+        testDir.listFiles()?.forEach { it.delete() }
     }
 
     @Test
@@ -181,6 +192,187 @@ class FileServiceInstrumentedTest {
         assertEquals(parsed1.hasValidHeader, parsed2.hasValidHeader)
         assertTrue(parsed1.audioData.contentEquals(parsed2.audioData))
     }
+
+    // ── saveRecording ────────────────────────────────────────────────────────────
+
+    @Test
+    fun saveRecording_createsWavFileOnDisk() {
+        FileService.saveRecording(context, "_instr_test_save", ByteArray(100) { 42 })
+        val file = File(FileService.getRecordingsDirectory(context), "_instr_test_save.wav")
+        assertTrue("WAV file should exist after save", file.exists())
+    }
+
+    @Test
+    fun saveRecording_writesRiffWaveHeader() {
+        FileService.saveRecording(context, "_instr_test_header", ByteArray(100) { 1 })
+        val bytes = File(FileService.getRecordingsDirectory(context), "_instr_test_header.wav").readBytes()
+        assertEquals("RIFF", String(bytes.copyOf(4)))
+        assertEquals("WAVE", String(bytes.copyOfRange(8, 12)))
+        assertEquals("fmt ", String(bytes.copyOfRange(12, 16)))
+        assertEquals("data", String(bytes.copyOfRange(36, 40)))
+    }
+
+    @Test
+    fun saveRecording_embeds48kHzSampleRate() {
+        FileService.saveRecording(context, "_instr_test_samplerate", ByteArray(100) { 1 })
+        val bytes = File(FileService.getRecordingsDirectory(context), "_instr_test_samplerate.wav").readBytes()
+        val sampleRate = ByteBuffer.wrap(bytes, 24, 4).order(ByteOrder.LITTLE_ENDIAN).int
+        assertEquals(48000, sampleRate)
+    }
+
+    @Test
+    fun saveRecording_audioDataIsIntact() {
+        val audio = ByteArray(200) { it.toByte() }
+        FileService.saveRecording(context, "_instr_test_data", audio)
+        val bytes = File(FileService.getRecordingsDirectory(context), "_instr_test_data.wav").readBytes()
+        val stored = bytes.copyOfRange(44, bytes.size)
+        assertArrayEquals(audio, stored)
+    }
+
+    @Test
+    fun saveRecording_totalFileSizeIs44PlusAudioLength() {
+        val audio = ByteArray(512) { 7 }
+        FileService.saveRecording(context, "_instr_test_size", audio)
+        val file = File(FileService.getRecordingsDirectory(context), "_instr_test_size.wav")
+        assertEquals(44L + audio.size, file.length())
+    }
+
+    @Test
+    fun saveRecording_withEmptyData_doesNotCreateFile() {
+        FileService.saveRecording(context, "_instr_test_empty", ByteArray(0))
+        val file = File(FileService.getRecordingsDirectory(context), "_instr_test_empty.wav")
+        assertFalse("Empty audio should not create a file", file.exists())
+    }
+
+    // ── deleteRecording ──────────────────────────────────────────────────────────
+
+    @Test
+    fun deleteRecording_removesFileFromDisk() {
+        FileService.saveRecording(context, "_instr_test_del", ByteArray(100) { 1 })
+        val file = File(FileService.getRecordingsDirectory(context), "_instr_test_del.wav")
+        assertTrue(file.exists())
+
+        FileService.deleteRecording(RecorderFile("_instr_test_del", file.absolutePath, 0, 0))
+
+        assertFalse("File should be gone after delete", file.exists())
+    }
+
+    @Test
+    fun deleteRecording_nonExistentFile_doesNotCrash() {
+        val ghost = RecorderFile("ghost", "/no/such/file.wav", 0, 0)
+        // Must not throw
+        FileService.deleteRecording(ghost)
+    }
+
+    @Test
+    fun deleteRecording_leavesOtherFilesUntouched() {
+        FileService.saveRecording(context, "_instr_test_del_a", ByteArray(100) { 1 })
+        FileService.saveRecording(context, "_instr_test_del_b", ByteArray(100) { 2 })
+        val dir = FileService.getRecordingsDirectory(context)
+        val fileA = File(dir, "_instr_test_del_a.wav")
+        val fileB = File(dir, "_instr_test_del_b.wav")
+
+        FileService.deleteRecording(RecorderFile("_instr_test_del_a", fileA.absolutePath, 0, 0))
+
+        assertFalse(fileA.exists())
+        assertTrue("Sibling file must survive the delete", fileB.exists())
+        fileB.delete()
+    }
+
+    // ── renameRecording ──────────────────────────────────────────────────────────
+
+    @Test
+    fun renameRecording_oldFileDisappearsNewFileAppears() {
+        FileService.saveRecording(context, "_instr_test_ren_old", ByteArray(100) { 3 })
+        val dir = FileService.getRecordingsDirectory(context)
+        val oldFile = File(dir, "_instr_test_ren_old.wav")
+        val newFile = File(dir, "_instr_test_ren_new.wav")
+        try {
+            assertTrue(oldFile.exists())
+            FileService.renameRecording(
+                RecorderFile("_instr_test_ren_old", oldFile.absolutePath, 0, 0),
+                "_instr_test_ren_new"
+            )
+            assertFalse("Old file must be gone", oldFile.exists())
+            assertTrue("New file must exist", newFile.exists())
+        } finally {
+            oldFile.delete(); newFile.delete()
+        }
+    }
+
+    @Test
+    fun renameRecording_audioDataSurvivesRename() {
+        val audio = ByteArray(100) { 99.toByte() }
+        FileService.saveRecording(context, "_instr_test_ren_data_old", audio)
+        val dir = FileService.getRecordingsDirectory(context)
+        val oldFile = File(dir, "_instr_test_ren_data_old.wav")
+        val newFile = File(dir, "_instr_test_ren_data_new.wav")
+        try {
+            FileService.renameRecording(
+                RecorderFile("_instr_test_ren_data_old", oldFile.absolutePath, 0, 0),
+                "_instr_test_ren_data_new"
+            )
+            val stored = newFile.readBytes().copyOfRange(44, newFile.readBytes().size)
+            assertArrayEquals(audio, stored)
+        } finally {
+            oldFile.delete(); newFile.delete()
+        }
+    }
+
+    @Test
+    fun renameRecording_nonExistentFile_doesNotCrash() {
+        val ghost = RecorderFile("ghost", "/no/such/ghost.wav", 0, 0)
+        FileService.renameRecording(ghost, "anything")
+    }
+
+    // ── getRecorderFiles ─────────────────────────────────────────────────────────
+
+    @Test
+    fun getRecorderFiles_returnsSavedFile() {
+        FileService.saveRecording(context, "_instr_test_list", ByteArray(100) { 5 })
+        try {
+            val recordings = FileService.getRecorderFiles(context)
+            assertTrue(
+                "Should contain the saved file",
+                recordings.any { it.name == "_instr_test_list" }
+            )
+        } finally {
+            File(FileService.getRecordingsDirectory(context), "_instr_test_list.wav").delete()
+        }
+    }
+
+    @Test
+    fun getRecorderFiles_afterDelete_fileIsGone() {
+        FileService.saveRecording(context, "_instr_test_list_del", ByteArray(100) { 6 })
+        val file = File(FileService.getRecordingsDirectory(context), "_instr_test_list_del.wav")
+        val recording = RecorderFile("_instr_test_list_del", file.absolutePath, 0, 0)
+
+        FileService.deleteRecording(recording)
+
+        val recordings = FileService.getRecorderFiles(context)
+        assertFalse(recordings.any { it.name == "_instr_test_list_del" })
+    }
+
+    @Test
+    fun getRecorderFiles_afterRename_appearsUnderNewName() {
+        FileService.saveRecording(context, "_instr_test_list_ren_old", ByteArray(100) { 8 })
+        val dir = FileService.getRecordingsDirectory(context)
+        val oldFile = File(dir, "_instr_test_list_ren_old.wav")
+        val newFile = File(dir, "_instr_test_list_ren_new.wav")
+        try {
+            FileService.renameRecording(
+                RecorderFile("_instr_test_list_ren_old", oldFile.absolutePath, 0, 0),
+                "_instr_test_list_ren_new"
+            )
+            val recordings = FileService.getRecorderFiles(context)
+            assertFalse(recordings.any { it.name == "_instr_test_list_ren_old" })
+            assertTrue(recordings.any { it.name == "_instr_test_list_ren_new" })
+        } finally {
+            oldFile.delete(); newFile.delete()
+        }
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────────
 
     // Helper functions
     private fun createTestWavFile(

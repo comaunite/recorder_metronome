@@ -106,7 +106,7 @@ class ParsedAudioDataTest {
         val audioData = byteArrayOf(1, 2, 3)
         val parsed1 = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 48000,
+            sampleRate = 22050,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true

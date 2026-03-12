@@ -41,7 +41,7 @@ fun ExitRecordingDialog(
                     shape = RoundedCornerShape(12.dp)
                 )
                 .padding(12.dp)
-                .fillMaxWidth(0.9f),
+                .fillMaxWidth(1f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
