@@ -75,7 +75,8 @@ fun RenameRecordingDialog(
                 )
                 .padding(12.dp)
                 .fillMaxWidth(0.9f),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 text = "Rename Recording",
