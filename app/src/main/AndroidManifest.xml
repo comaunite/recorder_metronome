@@ -22,7 +22,8 @@
         tools:targetApi="36">
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.Recorder.Splash">
             <!-- ...existing intent-filters... -->
             <intent-filter>
                 <action android:name="android:intent.action.MAIN" />

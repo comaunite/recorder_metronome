@@ -2,4 +2,11 @@
 <resources>
 
     <style name="Theme.Recorder" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.Recorder.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.Recorder</item>
+    </style>
+
 </resources>
