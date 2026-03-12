@@ -37,7 +37,7 @@ class PlaybackViewModelInstrumentedTest {
         val viewModel = PlaybackViewModel()
         val wavFile = createTestWavFile(
             fileName = "test.wav",
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             audioData = ByteArray(1000) { 42 }
@@ -78,7 +78,7 @@ class PlaybackViewModelInstrumentedTest {
 
         val wavFile = createTestWavFile(
             fileName = "test.wav",
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             audioData = ByteArray(100) { 42 }
@@ -117,10 +117,10 @@ class PlaybackViewModelInstrumentedTest {
         val viewModel = PlaybackViewModel()
         val wavFile = createTestWavFile(
             fileName = "test.wav",
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
-            audioData = ByteArray(44100) { 42 } // ~1 second
+            audioData = ByteArray(48000) { 42 } // ~1 second
         )
 
         val recording = RecorderFile(
@@ -148,7 +148,7 @@ class PlaybackViewModelInstrumentedTest {
 
         val wavFile = createTestWavFile(
             fileName = "test.wav",
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             audioData = ByteArray(100) { 42 }

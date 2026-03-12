@@ -46,7 +46,7 @@ class FileServiceInstrumentedTest {
         // Create a test WAV file with valid header
         val wavFile = createTestWavFile(
             fileName = "test_valid.wav",
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             audioData = ByteArray(100) { 42 }
@@ -54,7 +54,7 @@ class FileServiceInstrumentedTest {
 
         val parsed = FileService.readRecorderFile(wavFile.absolutePath)
 
-        assertEquals(44100, parsed.sampleRate)
+        assertEquals(48000, parsed.sampleRate)
         assertEquals(1, parsed.channels)
         assertEquals(16, parsed.bitsPerSample)
         assertTrue(parsed.hasValidHeader)
@@ -71,7 +71,7 @@ class FileServiceInstrumentedTest {
 
         val parsed = FileService.readRecorderFile(pcmFile.absolutePath)
 
-        assertEquals(44100, parsed.sampleRate) // Default fallback
+        assertEquals(48000, parsed.sampleRate) // Default fallback
         assertEquals(1, parsed.channels) // Default fallback
         assertEquals(16, parsed.bitsPerSample) // Default fallback
         assertFalse(parsed.hasValidHeader)
@@ -140,7 +140,7 @@ class FileServiceInstrumentedTest {
         // Small audio
         val smallFile = createTestWavFile(
             fileName = "test_small.wav",
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             audioData = ByteArray(10)
@@ -152,7 +152,7 @@ class FileServiceInstrumentedTest {
         // Large audio
         val largeFile = createTestWavFile(
             fileName = "test_large.wav",
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             audioData = ByteArray(10000)
@@ -166,7 +166,7 @@ class FileServiceInstrumentedTest {
     fun readRecorderFile_multipleReads_returnConsistentData() {
         val wavFile = createTestWavFile(
             fileName = "test_consistent.wav",
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             audioData = ByteArray(100) { 88 }

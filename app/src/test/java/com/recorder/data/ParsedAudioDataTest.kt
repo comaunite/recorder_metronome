@@ -8,7 +8,7 @@ class ParsedAudioDataTest {
     @Test
     fun parsedAudioData_withValidHeader_storesAllValues() {
         val audioData = byteArrayOf(1, 2, 3, 4, 5)
-        val sampleRate = 44100
+        val sampleRate = 48000
         val channels = 1
         val bitsPerSample = 16
         val hasValidHeader = true
@@ -33,7 +33,7 @@ class ParsedAudioDataTest {
         val audioData = byteArrayOf(1, 2, 3, 4, 5)
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = false
@@ -47,7 +47,7 @@ class ParsedAudioDataTest {
         val audioData = byteArrayOf()
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -63,7 +63,7 @@ class ParsedAudioDataTest {
 
         val parsed1 = ParsedAudioData(
             audioData = audioData1,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -71,7 +71,7 @@ class ParsedAudioDataTest {
 
         val parsed2 = ParsedAudioData(
             audioData = audioData2,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -84,7 +84,7 @@ class ParsedAudioDataTest {
     fun parsedAudioData_inequality_withDifferentAudioData() {
         val parsed1 = ParsedAudioData(
             audioData = byteArrayOf(1, 2, 3),
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -92,7 +92,7 @@ class ParsedAudioDataTest {
 
         val parsed2 = ParsedAudioData(
             audioData = byteArrayOf(1, 2, 4),
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -106,7 +106,7 @@ class ParsedAudioDataTest {
         val audioData = byteArrayOf(1, 2, 3)
         val parsed1 = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -128,7 +128,7 @@ class ParsedAudioDataTest {
         val audioData = byteArrayOf(1, 2, 3)
         val parsed1 = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -136,7 +136,7 @@ class ParsedAudioDataTest {
 
         val parsed2 = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 2,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -150,7 +150,7 @@ class ParsedAudioDataTest {
         val audioData = byteArrayOf(1, 2, 3)
         val parsed1 = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -158,7 +158,7 @@ class ParsedAudioDataTest {
 
         val parsed2 = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 24,
             hasValidHeader = true
@@ -172,7 +172,7 @@ class ParsedAudioDataTest {
         val audioData = byteArrayOf(1, 2, 3)
         val parsed1 = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -180,7 +180,7 @@ class ParsedAudioDataTest {
 
         val parsed2 = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = false
@@ -196,7 +196,7 @@ class ParsedAudioDataTest {
 
         val parsed1 = ParsedAudioData(
             audioData = audioData1,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -204,7 +204,7 @@ class ParsedAudioDataTest {
 
         val parsed2 = ParsedAudioData(
             audioData = audioData2,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -220,7 +220,7 @@ class ParsedAudioDataTest {
 
         val parsedSmall = ParsedAudioData(
             audioData = smallAudio,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -228,7 +228,7 @@ class ParsedAudioDataTest {
 
         val parsedLarge = ParsedAudioData(
             audioData = largeAudio,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -242,10 +242,10 @@ class ParsedAudioDataTest {
     fun parsedAudioData_withDifferentAudioFormats_createsCorrectly() {
         val audioData = byteArrayOf(1, 2, 3, 4)
 
-        // Mono, 16-bit, 44100Hz
+        // Mono, 16-bit, 48000Hz
         val mono16 = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true

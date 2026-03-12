@@ -23,7 +23,7 @@ enum class RecordingState {
 }
 
 class RecorderEngine {
-    private val sampleRate = 44100
+    private val sampleRate = 48000
     private val bufferSize = AudioRecord.getMinBufferSize(
         sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
     )

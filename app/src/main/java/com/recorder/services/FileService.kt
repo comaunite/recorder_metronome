@@ -85,8 +85,8 @@ object FileService {
                         durationInMs = durationSeconds * 1000
                     }
                 } else {
-                    // Invalid header, assume entire file is raw PCM data (44100 Hz, 1 channel, 16-bit)
-                    val assumedSampleRate = 44100
+                    // Invalid header, assume entire file is raw PCM data (48000 Hz, 1 channel, 16-bit)
+                    val assumedSampleRate = 48000
                     val assumedChannels = 1
                     val assumedBitsPerSample = 16
                     val dataSize = file.length()
@@ -140,7 +140,7 @@ object FileService {
      * Write audio data as a proper WAV file with header
      */
     private fun writeWavFile(file: File, audioData: ByteArray) {
-        val sampleRate = 44100
+        val sampleRate = 48000
         val channels = 1 // Mono
         val bitsPerSample = 16
 
@@ -247,7 +247,7 @@ object FileService {
         }
 
         var audioData = ByteArray(0)
-        var parsedSampleRate = 44100 // Default fallback
+        var parsedSampleRate = 48000 // Default fallback
         var parsedChannels = 1
         var parsedBitsPerSample = 16
         var hasValidHeader = false

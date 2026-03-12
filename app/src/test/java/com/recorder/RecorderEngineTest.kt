@@ -61,11 +61,11 @@ class RecorderEngineTest {
     fun loadRecordingForPlayback_withValidParsedAudio_setsStateCorrectly() {
         val engine = RecorderEngine()
 
-        // Create test audio data (100 bytes at 44100Hz, mono, 16-bit)
+        // Create test audio data (100 bytes at 48000Hz, mono, 16-bit)
         val audioData = ByteArray(100) { 42 }
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -82,10 +82,10 @@ class RecorderEngineTest {
     fun loadRecordingForPlayback_withValidAudio_generatesWaveformData() {
         val engine = RecorderEngine()
 
-        val audioData = ByteArray(88200) { 42 } // ~2 seconds at 44100Hz
+        val audioData = ByteArray(88200) { 42 } // ~2 seconds at 48000Hz
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -107,7 +107,7 @@ class RecorderEngineTest {
         val audioData = ByteArray(10) { 42 }
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -127,7 +127,7 @@ class RecorderEngineTest {
         val audioData = ByteArray(100) { 42 }
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -149,10 +149,10 @@ class RecorderEngineTest {
 
         val audioData = ByteArray(100) { 42 }
 
-        // 44100Hz, mono, 16-bit
+        // 48000Hz, mono, 16-bit
         engine1.loadRecordingForPlayback(ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -187,13 +187,13 @@ class RecorderEngineTest {
         val engine = RecorderEngine()
 
         // Use significantly larger audio data to ensure different bar counts
-        // At 44100Hz, 16-bit, mono: 88200 bytes = 1 second = 20 bars (at 20 bars/sec)
+        // At 48000Hz, 16-bit, mono: 88200 bytes = 1 second = 20 bars (at 20 bars/sec)
         val audioData1 = ByteArray(88200) { 11 }  // 1 second = 20 bars
         val audioData2 = ByteArray(176400) { 22 } // 2 seconds = 40 bars
 
         val parsed1 = ParsedAudioData(
             audioData = audioData1,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -201,7 +201,7 @@ class RecorderEngineTest {
 
         val parsed2 = ParsedAudioData(
             audioData = audioData2,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -224,7 +224,7 @@ class RecorderEngineTest {
         val audioData = ByteArray(100) { 42 }
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = false // Raw PCM without header
@@ -243,7 +243,7 @@ class RecorderEngineTest {
         val audioData = byteArrayOf()
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -272,7 +272,7 @@ class RecorderEngineTest {
         val audioData = ByteArray(100) { 42 }
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -292,7 +292,7 @@ class RecorderEngineTest {
         val audioData = ByteArray(100) { 42 }
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -313,7 +313,7 @@ class RecorderEngineTest {
         val audioData = ByteArray(100) { 42 }
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -333,7 +333,7 @@ class RecorderEngineTest {
         val audioData = ByteArray(100) { 42 }
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -352,7 +352,7 @@ class RecorderEngineTest {
         val audioData = ByteArray(1000) { 42 }
         val parsed = ParsedAudioData(
             audioData = audioData,
-            sampleRate = 44100,
+            sampleRate = 48000,
             channels = 1,
             bitsPerSample = 16,
             hasValidHeader = true
@@ -442,7 +442,7 @@ class RecorderEngineTest {
         val engine = RecorderEngine()
         val parsed = ParsedAudioData(
             audioData = ByteArray(100) { 1 },
-            sampleRate = 44100, channels = 1, bitsPerSample = 16, hasValidHeader = true
+            sampleRate = 48000, channels = 1, bitsPerSample = 16, hasValidHeader = true
         )
         engine.loadRecordingForPlayback(parsed)
         assertEquals(RecordingState.PAUSED, engine.recordingStateFlow.value)
@@ -459,7 +459,7 @@ class RecorderEngineTest {
 
         val parsed = ParsedAudioData(
             audioData = ByteArray(100) { 1 },
-            sampleRate = 44100, channels = 1, bitsPerSample = 16, hasValidHeader = true
+            sampleRate = 48000, channels = 1, bitsPerSample = 16, hasValidHeader = true
         )
         engine.loadRecordingForPlayback(parsed)
         assertEquals(1.0f, engine.playbackSpeedFlow.value)
@@ -488,7 +488,7 @@ class RecorderEngineTest {
         val engine = RecorderEngine()
         val parsed = ParsedAudioData(
             audioData = ByteArray(100) { 1 },
-            sampleRate = 44100, channels = 1, bitsPerSample = 16, hasValidHeader = true
+            sampleRate = 48000, channels = 1, bitsPerSample = 16, hasValidHeader = true
         )
         engine.loadRecordingForPlayback(parsed)
         assertEquals(RecordingState.PAUSED, engine.recordingStateFlow.value)
@@ -522,7 +522,7 @@ class RecorderEngineTest {
         // Load empty data so state becomes PAUSED but recordedData is empty
         val parsed = ParsedAudioData(
             audioData = ByteArray(0),
-            sampleRate = 44100, channels = 1, bitsPerSample = 16, hasValidHeader = true
+            sampleRate = 48000, channels = 1, bitsPerSample = 16, hasValidHeader = true
         )
         engine.loadRecordingForPlayback(parsed)
         assertEquals(RecordingState.PAUSED, engine.recordingStateFlow.value)
@@ -566,7 +566,7 @@ class RecorderEngineTest {
         // Use enough audio data to guarantee multiple amplitude bars
         val parsed = ParsedAudioData(
             audioData = ByteArray(88200) { 42 }, // 1 second of audio
-            sampleRate = 44100, channels = 1, bitsPerSample = 16, hasValidHeader = true
+            sampleRate = 48000, channels = 1, bitsPerSample = 16, hasValidHeader = true
         )
         engine.loadRecordingForPlayback(parsed)
         assertEquals(RecordingState.PAUSED, engine.recordingStateFlow.value)
@@ -587,7 +587,7 @@ class RecorderEngineTest {
         val engine = RecorderEngine()
         val parsed = ParsedAudioData(
             audioData = ByteArray(88200) { 42 },
-            sampleRate = 44100, channels = 1, bitsPerSample = 16, hasValidHeader = true
+            sampleRate = 48000, channels = 1, bitsPerSample = 16, hasValidHeader = true
         )
         engine.loadRecordingForPlayback(parsed)
 
@@ -603,7 +603,7 @@ class RecorderEngineTest {
         val engine = RecorderEngine()
         val parsed = ParsedAudioData(
             audioData = ByteArray(88200) { 42 },
-            sampleRate = 44100, channels = 1, bitsPerSample = 16, hasValidHeader = true
+            sampleRate = 48000, channels = 1, bitsPerSample = 16, hasValidHeader = true
         )
         engine.loadRecordingForPlayback(parsed)
 
@@ -620,7 +620,7 @@ class RecorderEngineTest {
         val engine = RecorderEngine()
         val parsed = ParsedAudioData(
             audioData = ByteArray(88200) { 42 },
-            sampleRate = 44100, channels = 1, bitsPerSample = 16, hasValidHeader = true
+            sampleRate = 48000, channels = 1, bitsPerSample = 16, hasValidHeader = true
         )
         engine.loadRecordingForPlayback(parsed)
 
@@ -637,7 +637,7 @@ class RecorderEngineTest {
         // Very small data → likely collapses to 1 amplitude bar
         val parsed = ParsedAudioData(
             audioData = ByteArray(2) { 42 },
-            sampleRate = 44100, channels = 1, bitsPerSample = 16, hasValidHeader = true
+            sampleRate = 48000, channels = 1, bitsPerSample = 16, hasValidHeader = true
         )
         engine.loadRecordingForPlayback(parsed)
 

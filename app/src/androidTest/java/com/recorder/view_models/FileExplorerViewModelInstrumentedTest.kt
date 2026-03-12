@@ -286,7 +286,7 @@ class FileExplorerViewModelInstrumentedTest {
         val file = File(recordingsDir, fileName)
 
         RandomAccessFile(file, "rw").use { raf ->
-            val sampleRate = 44100
+            val sampleRate = 48000
             val channels = 1
             val bitsPerSample = 16
             val byteRate = sampleRate * channels * (bitsPerSample / 8)

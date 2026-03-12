@@ -34,7 +34,7 @@ class FileServiceTest {
     private fun createWavFile(
         dir: File,
         name: String,
-        sampleRate: Int = 44100,
+        sampleRate: Int = 48000,
         channels: Int = 1,
         bitsPerSample: Int = 16,
         audioData: ByteArray = ByteArray(100) { 42 }
@@ -203,7 +203,7 @@ class FileServiceTest {
         val context = RuntimeEnvironment.getApplication()
         val dir = FileService.getRecordingsDirectory(context)
         dir.listFiles()?.forEach { it.delete() }
-        // 44100 Hz, mono, 16-bit → 88200 bytes/s; use 88200 bytes of audio → 1000 ms
+        // 48000 Hz, mono, 16-bit → 88200 bytes/s; use 88200 bytes of audio → 1000 ms
         createWavFile(dir, "duration", audioData = ByteArray(88200))
 
         val result = FileService.getRecorderFiles(context)
@@ -361,13 +361,13 @@ class FileServiceTest {
     @Test
     fun readRecorderFile_validWavHeader_parsesCorrectly() {
         val audio = ByteArray(100) { 42 }
-        val file = createWavFile(tempDir, "valid", sampleRate = 44100, channels = 1,
+        val file = createWavFile(tempDir, "valid", sampleRate = 48000, channels = 1,
             bitsPerSample = 16, audioData = audio)
 
         val parsed = FileService.readRecorderFile(file.absolutePath)
 
         assertTrue(parsed.hasValidHeader)
-        assertEquals(44100, parsed.sampleRate)
+        assertEquals(48000, parsed.sampleRate)
         assertEquals(1, parsed.channels)
         assertEquals(16, parsed.bitsPerSample)
         assertEquals(100, parsed.audioData.size)
@@ -398,7 +398,7 @@ class FileServiceTest {
         assertFalse(parsed.hasValidHeader)
         assertEquals(20, parsed.audioData.size)
         // Defaults
-        assertEquals(44100, parsed.sampleRate)
+        assertEquals(48000, parsed.sampleRate)
         assertEquals(1, parsed.channels)
         assertEquals(16, parsed.bitsPerSample)
     }
@@ -413,7 +413,7 @@ class FileServiceTest {
 
         assertFalse(parsed.hasValidHeader)
         assertEquals(100, parsed.audioData.size)
-        assertEquals(44100, parsed.sampleRate)
+        assertEquals(48000, parsed.sampleRate)
         assertEquals(1, parsed.channels)
         assertEquals(16, parsed.bitsPerSample)
     }
